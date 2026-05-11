@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WYSIWYG</title>
+    <link rel="icon" type="image/png" href="/fyrlogo.png">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div id="passwordModal" class="modal">
+    <div class="modal-content">
+        <span id="closePasswordModalBtn" class="close-btn">&times;</span>
+        <h3>Admin Access</h3>
+        <input type="password" id="adminPasswordInput" placeholder="Enter Password">
+        <button id="submitPasswordBtn" class="btn-search" style="padding: 8px 15px;">Submit</button>
+    </div>
+</div>
+
+<div id="shutdownModal" class="modal">
+    <div class="modal-content">
+        <span id="closeShutdownModalBtn" class="close-btn">&times;</span>
+        <h3 style="color: var(--danger-color);">🔌 Shut Down?</h3>
+        <p>Are you sure you want to stop the server and close the app?</p>
+        <div class="modal-actions" style="justify-content: center; margin-top: 15px;">
+            <button id="confirmShutdownBtn" class="shutdown-btn" style="padding: 8px 20px; font-weight: bold;">Yes, Shut Down</button>
+            <button id="cancelShutdownBtn" class="nav-btn" style="padding: 8px 20px; font-weight: bold;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Generic Themed Modal -->
+<div id="genericModal" class="modal" style="display:none; align-items:center; justify-content:center;">
+    <div class="modal-content modal-content-wide">
+        <h3 id="genericModalTitle" style="margin-top: 0; color: var(--wysiwyg-blue);">Title</h3>
+        <div id="genericModalBody" style="margin-bottom: 20px; white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></div>
+        <div id="genericModalActions" class="modal-actions">
+            <!-- Buttons injected via JS -->
+        </div>
+    </div>
+</div>
+
+<div id="requestModal" class="modal">
+    <div class="modal-content modal-content-narrow">
+        <span id="closeRequestModalBtn" class="close-btn">&times;</span>
+        <h3 style="margin-top: 0; color: var(--wysiwyg-blue);">Feature Request</h3>
+        
+        <label class="form-label">Name:</label>
+        <input type="text" id="reqName" class="full-width-input" placeholder="Your Name">
+        
+        <label class="form-label">Request:</label>
+        <textarea id="reqText" rows="5" style="width: 100%; margin-bottom: 15px; resize: vertical;" placeholder="Describe your feature request..."></textarea>
+        
+        <div class="modal-actions" style="justify-content: flex-end;">
+            <button id="submitRequestBtn" class="btn-search" style="padding: 8px 15px;">OK</button>
+            <button id="cancelRequestBtn" class="nav-btn" style="padding: 8px 15px; margin-left: 5px;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="calcModal" class="modal">
+    <div class="modal-content modal-content-narrow">
+        <span id="closeCalcModalBtn" class="close-btn">&times;</span>
+        <h3 style="margin-top: 0; color: var(--wysiwyg-blue);">Cost Calculator</h3>
+        
+        <label class="form-label">Condition:</label>
+        <select id="calcCondition" class="full-width-input" style="margin-bottom: 10px;"></select>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+                <label class="form-label">Comp. $:</label>
+                <input type="text" id="calcCompPrice" class="full-width-input">
+            </div>
+            <div>
+                <label class="form-label">Comp. Ship:</label>
+                <input type="text" id="calcCompShip" class="full-width-input">
+            </div>
+            <div style="grid-column: span 2;">
+                <label class="form-label">Comp Total:</label>
+                <input type="text" id="calcCompTotal" class="full-width-input" readonly style="background: #e9ecef; color: black; cursor: text;">
+            </div>
+            <hr style="grid-column: span 2; width: 100%; border-top: 1px solid var(--border-color); margin: 5px 0;">
+            <div>
+                <label class="form-label">Our $:</label>
+                <input type="text" id="calcOurPrice" class="full-width-input">
+            </div>
+            <div style="display:flex; align-items:flex-end; justify-content:center;">
+                <button id="copyOurPriceBtn" class="btn-search" style="padding: 8px 12px; font-size: 12px; width: 100%; max-width: 120px;">Copy</button>
+            </div>
+            <div>
+                <label class="form-label">Our Total:</label>
+                <input type="text" id="calcOurTotal" class="full-width-input" readonly style="background: #e9ecef; color: black; cursor: text;">
+            </div>
+        </div>
+        
+        <div class="modal-actions" style="margin-top: 15px;">
+            <button id="calculateBtn" class="btn-search" style="width: 100%;">Calculate</button>
+        </div>
+    </div>
+</div>
+
+<div id="customOptionsModal" class="modal">
+    <div class="modal-content modal-content-narrow">
+        <span id="closeCustomOptionsModalBtn" class="close-btn">&times;</span>
+        <h3 style="margin-top: 0; color: var(--wysiwyg-blue);">Edit Conditions</h3>
+        
+        <div style="margin-bottom: 10px;">
+            <label class="form-label">Category:</label>
+            <select id="modalCategorySelect" class="full-width-input" style="padding: 4px;">
+                <option value="cassette">Cassette</option>
+                <option value="cd">CD</option>
+                <option value="lp">LP</option>
+            </select>
+        </div>
+        
+        <div id="customOptionsList" style="margin-bottom: 15px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); padding: 5px; border-radius: 4px;">
+
+            <!-- list of options -->
+        </div>
+
+        <hr style="border-top: 1px solid var(--border-color); margin: 10px 0;">
+        <h4 style="margin-top: 0; margin-bottom: 5px; font-size: 13px;">Add New Option</h4>
+        
+        <label class="form-label">Title:</label>
+        <input type="text" id="newOptionTitle" class="full-width-input" placeholder="e.g. Water Damage">
+        
+        <label class="form-label" style="margin-top: 5px;">Text:</label>
+        <input type="text" id="newOptionText" class="full-width-input" placeholder="e.g. slight water damage on sleeve">
+        
+        <div class="modal-actions" style="justify-content: flex-end; margin-top: 10px;">
+            <button id="cancelEditCustomOptionBtn" class="nav-btn" style="padding: 5px 15px; margin-right: 5px; display: none;">Cancel</button>
+            <button id="addCustomOptionBtn" class="btn-search" style="padding: 5px 15px;">Add</button>
+        </div>
+    </div>
+</div>
+
+
+<div class="container">
+    <div class="sticky-header">
+        <div class="nav-item-group" style="justify-content: space-between; padding: 5px 10px; margin-bottom: 5px; align-items: flex-start;">
+            <div class="nav-item-group" style="align-items: flex-start;">
+                <button id="runUberPasteBtn" class="nav-btn nav-item-group" title="Launch UberPaste" style="height: fit-content;"><img src="/UberPaste/UberPaste.png" class="nav-icon"> UberPaste</button>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <button id="runWysiScanBtn" class="nav-btn nav-item-group" title="Open WysiScan"><img src="/WysiScan/WysiScan.png" class="nav-icon"> WysiScan</button>
+                    <label style="font-size: 10px; cursor: pointer; color: var(--text-color); margin-top: 2px;" title="Docking opens the tool in a new browser tab instead of a floating popup window.">
+                        <input type="checkbox" id="dockScanner"> Dock
+                    </label>
+                </div>
+                <button id="openCalcBtn" class="nav-btn" title="Cost Calculator" style="padding: 0 8px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-left: 5px;">💲 Calc</button>
+            </div>
+            <div class="nav-item-group">
+                <button id="themeBtn" class="nav-btn" title="Toggle Dark/Light Mode">🌓</button>
+                <button id="refreshBtn" class="nav-btn refresh-btn" title="Force refresh to get the latest version">🔄 Refresh</button>
+                <button id="updateMenusBtn" class="nav-btn" title="Pull latest menus from server">⬇️ Update Menus</button>
+                <button id="editorBtn" class="nav-btn" title="Open Settings Editor">⚙️ Editor</button>
+                <button id="shutdownBtn" class="nav-btn shutdown-btn" title="Shut Down Server">🔌 Shut Down</button>
+            </div>
+        </div>
+
+        <div id="updateBanner" class="blink-update">
+            ⚠️ NEW VERSION AVAILABLE! CLICK HERE TO UPDATE ⚠️
+        </div>
+        <div class="logo-container">
+            <img src="/wysiwyglogo.png" alt="WYSIWYG Logo" class="logo">
+        </div>
+
+        <h2 id="appTitle" style="cursor: pointer;" title="Click to view Changelog">WYSIWYG</h2>
+
+<div class="tab-container">
+    <button class="tab-btn active" data-tab="listingTool">Builder</button>
+    <button class="tab-btn" data-tab="futureTool" hx-get="/history-list" hx-target="#historyList">Details</button>
+    <button class="tab-btn" data-tab="lookUpTab">Market Look Up</button> 
+</div>
+
+        <!-- Scraper Section (Sticky) -->
+        <div id="scraperSection" style="margin-bottom: 5px; padding: 10px; background: var(--background-color, #f8f9fa); border-radius: 6px; border: 1px solid var(--border-color, #ccc); color: var(--text-main, #a89292);">
+            <form hx-post="/scrape" hx-target="#scraperOutput"
+                  hx-on:htmx:before-request="this.querySelector('button[type=submit]').innerText = 'Scraping...'; this.querySelector('button[type=submit]').disabled = true;"
+                  hx-on:htmx:after-request="this.querySelector('button[type=submit]').innerText = 'Scrape'; this.querySelector('button[type=submit]').disabled = false;"
+                  class="scraper-form">
+                <div class="scraper-form-container">
+                    <label>Paste Discogs URL:</label>
+                    <label class="nav-item-group" style="font-weight:normal; font-size:11px; cursor:pointer;">
+                        <input type="checkbox" id="autoPasteToggle" checked> Autopaste
+                    </label>
+                </div>
+                <div class="scraper-input-group">
+                    <input type="url" name="url" id="discogsUrlInput" style="width:100%;" placeholder="https://www.discogs.com/release/... or /shop/item/..." required>
+                    <button type="submit" id="scrapeBtn" class="scraper-button">Scrape</button>
+                </div>
+            </form>
+            <div id="scraperError" style="margin-top:10px;"></div>
+            <div id="scraperOutput" style="display:none;" hx-on:htmx:after-swap="handleScrapeResult()"></div>
+        </div>
+    </div>
+	<div id="lookUpTab" class="tab-content">
+    <div class="search-container-styles">
+        <div class="form-group"><label>ARTIST</label><input type="text" id="lookupArtist"></div>
+        <div class="form-group"><label>TITLE</label><input type="text" id="lookupTitle"></div>
+        <div class="form-group"><label>BARCODE / UPC</label><input type="text" id="lookupUPC" placeholder="Scan here..."></div>
+        <div class="form-group"><label>CATALOG #</label><input type="text" id="lookupCat"></div>
+        <div class="form-group"><label>LABEL</label><input type="text" id="lookupLabel"></div>
+        <div class="form-group">
+            <label>FORMAT</label>
+            <select id="lookupFormat">
+                <option value="all">Search All Formats</option>
+                <option value="vinyl">Only Vinyl</option>
+                <option value="cd">Only CD</option>
+                <option value="other">Exclude Vinyl/CD</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>CONDITION (DEFAULT)</label>
+            <select id="lookupCondition">
+                <option value="all" selected>All</option>
+                <option value="M">Mint (M)</option>
+                <option value="NM">Near Mint (NM)</option>
+                <option value="VG+">Very Good Plus (VG+)</option>
+                <option value="VG">Very Good (VG)</option>
+            </select>
+        </div>
+        <div class="search-button-row">
+            <button id="runMarketSearchBtn" class="search-button">🔍 SEARCH MARKET (DISCOGS & AMAZON)</button>
+            <button id="resetLookupBtn" class="reset-button">Reset</button>
+        </div>
+    </div>
+
+    <div id="lookupResults" style="margin-top: 20px;">
+        <p style="text-align: center; color: #666;">Enter details above to see market data.</p>
+    </div>
+</div>
+
+    <div id="listingTool" class="tab-content" style="display: block;">
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="form-group">
+                <label>BOX NUMBER</label>
+                <div class="nav-item-group">
+                    <input type="text" id="boxNumber">
+                    <button id="saveProfileBtn" type="button" title="Save Profile" class="scraper-button" style="width:auto; padding:0 8px;">💾</button>
+                </div>
+            </div>
+            <div class="form-group"><label>LISTER INITIALS</label><input type="text" id="lister" maxlength="3"></div>
+            <div class="form-group"><label>SKU FLAGS</label><select id="skuFlag"></select></div>
+        </div>
+
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr 1fr;">
+            <div class="form-group">
+                <label>MEDIA CONDITION</label>
+                <select id="conditionOfMedia"></select>
+                <div class="radio-group">
+                    <label><input type="radio" name="media_modifier" value="" checked> None</label>
+                    <label><input type="radio" name="media_modifier" value="++"> ++</label>
+                    <label><input type="radio" name="media_modifier" value="+"> +</label>
+                    <label><input type="radio" name="media_modifier" value="-"> -</label>
+                </div>
+            </div>
+            <div class="form-group"><label>PACKAGING FEATURE</label><select id="packagingFeature" multiple></select></div>
+            <div class="form-group"><label>EDITION</label><select id="edition" multiple></select></div>
+            <div class="form-group"><label>FORMAT TAGS</label><select id="formatTags" multiple></select></div>
+            <div class="form-group"><label>WEIGHT/SPEED</label><select id="weightSpeed" multiple></select></div>
+        </div>
+
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr 1fr;">
+            <div class="form-group"><label>COLOR</label><input type="text" id="mediaColor" placeholder="e.g. Red"></div>
+            <div class="form-group"><label>PRE FM</label><select id="preFM" multiple></select></div>
+            <div class="form-group"><label>MEDIA FORMAT</label><select id="mediaFormat"></select></div>
+            <div class="form-group"><label>MEDIA DESCRIPTION</label><input type="text" id="mediaDescriptionText" placeholder="e.g. Dolby"></div>
+            <div class="form-group"><label>POST FM</label><select id="postFM" multiple></select></div>
+        </div>
+
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="form-group">
+                <label>SLEEVE COND.</label>
+                <select id="sleeveCondition"></select>
+                <div class="radio-group">
+                    <label><input type="radio" name="sleeve_modifier" value="" checked> None</label>
+                    <label><input type="radio" name="sleeve_modifier" value="++"> ++</label>
+                    <label><input type="radio" name="sleeve_modifier" value="+"> +</label>
+                    <label><input type="radio" name="sleeve_modifier" value="-"> -</label>
+                </div>
+            </div>
+            <div class="form-group"><label>SLEEVE PACK.</label><select id="sleevePackaging" multiple></select></div>
+            <div class="form-group"><label>SLEEVE DESC.</label><input type="text" id="sleeveDesc" placeholder="e.g. Jcard"></div>
+        </div>
+
+        <div class="form-grid" style="grid-template-columns: 1fr 0.5fr 0.5fr 1fr;">
+            <div class="form-group"><label>LABEL / CAT#</label><input type="text" id="recordLabel"></div>
+            <div class="form-group"><label>YEAR</label><input type="text" id="Year"></div>
+            <div class="form-group"><label>COUNTRY</label><input type="text" id="country" value="USA"></div>
+            <div class="form-group">
+                <label>OPTIONS</label>
+                <div style="display:flex; flex-wrap:nowrap; gap:5px; align-items:center; margin-top:5px;">
+                    <label id="oopLabel" style="font-weight:normal; font-size:11px; display: flex; align-items: center; gap: 4px; white-space: nowrap;"><input type="checkbox" id="oopToggle"> OOP</label>
+                    <input type="text" id="trackTimeInfo" placeholder="Tracks" style="width:45px; padding:2px; font-size:11px;">
+                    <div style="display:flex; align-items:center; gap: 6px; flex-grow: 1; justify-content: flex-end;">
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
+                            <span style="font-size: 10px; font-weight: 600; color: var(--text-color, #444); line-height: 1; margin-left: 2px; letter-spacing: 0.03em;">LP Cond.</span>
+                            <select id="lpOptions" multiple style="width: 135px; height: 65px; font-size: 11px;"></select>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
+                            <span style="font-size: 10px; font-weight: 600; color: var(--text-color, #444); line-height: 1; margin-left: 2px; letter-spacing: 0.03em;">CD Cond.</span>
+                            <select id="cdOptions" multiple style="width: 135px; height: 65px; font-size: 11px;"></select>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
+                            <span style="font-size: 10px; font-weight: 600; color: var(--text-color, #444); line-height: 1; margin-left: 2px; letter-spacing: 0.03em;">Cass. Cond.</span>
+                            <select id="customOptions" multiple style="width: 135px; height: 65px; font-size: 11px;"></select>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; justify-content: flex-end;">
+                            <button id="editCustomOptionsBtn" class="nav-btn" style="padding: 2px 5px; font-size: 11px; height: 20px;">✏️ Edit</button>
+                            <button id="clearCustomOptionsBtn" class="nav-btn" style="padding: 2px 5px; font-size: 11px; height: 20px;" title="Clear Selections">❌ Clear</button>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button id="generateBtn" class="btn-search" style="flex: 2; font-size: 14px;">Generate</button>
+            <button id="clearBtn" class="shutdown-btn" style="flex: 1; font-size: 14px;">🗑️ Reset All</button>
+        </div>
+
+        <div class="form-group">
+            <label>Generated Listing Data</label>
+            <div class="nav-item-group" style="margin-bottom: 5px;">
+                <button id="copySkuBtn" class="copy-button">Copy SKU</button>
+                <input type="text" id="outputSku" style="font-weight: bold;">
+            </div>
+            <div class="nav-item-group" style="align-items: flex-start;">
+                <div class="output-button-group">
+                    <button id="copyDescBtn" class="copy-button" style="width: 100%; margin-top: 1px;">Copy Desc</button>
+                    <div class="counter-button-group">
+                        <div class="counter-button-container">
+                            <button id="btnListed" class="counter-button" style="background: #28a745;" title="Listed +1">L<br>...</button>
+                            <button id="btnAmazon" class="counter-button" style="background: #007bff;" title="Amazon Add +1">AA<br>...</button>
+                            <button id="btnDiscogs" class="counter-button" style="background: #17a2b8;" title="Discogs Add +1">DA<br>...</button>
+                            <button id="btnDupes" class="counter-button" style="background: #fd7e14;" title="Duplicate +1">D<br>...</button>
+                        </div>
+                        <button id="openListingsFolderBtn" class="open-folder-button" title="Open Listings File/Folder">📂 Open</button>
+                    </div>
+                </div>
+                <textarea id="outputDesc" rows="6"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div id="futureTool" class="tab-content">
+        <div class="scraper-layout">
+            <div class="history-sidebar">
+                <h4 style="margin-top:0;">📜 Session History</h4>
+                <div id="historyList">Loading...</div>
+            </div>
+
+            <div class="scraper-main">
+                <!-- Scraper Form Moved to Tab 1 -->
+
+<div style="margin-top:10px;">
+    <!-- Buttons Row -->
+    <div class="details-button-row">
+        <button id="htmlGenBtn" 
+                hx-post="/format-html" 
+                hx-swap="none"
+                hx-vals='js:{"raw_text": document.getElementById("manualInputBox")?.value || document.getElementById("scraperResultText")?.textContent || ""}'
+                hx-on:htmx:after-request="if(event.detail.successful) { var r = event.detail.xhr.responseText; document.getElementById('htmlOutputBox').value = r; document.getElementById('htmlPreview').innerHTML = r; }"
+                class="details-button" style="background:#6f42c1;"> 
+            ✨ Generate HTML Description
+        </button>
+        <button id="copyLivePreviewBtn" class="details-button" style="background:#17a2b8;">
+            📋 Copy Live Preview
+        </button>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="details-grid">
+        <!-- Left Column: HTML Code & Manual Input -->
+        <div class="details-column">
+            <div class="details-box">
+                <div class="details-box-header">
+                    <label class="details-box-label">HTML CODE</label>
+                    <button id="copyHtmlBtn" class="scratchpad-button" style="background:#28a745;">📋 Copy Code</button>
+                </div>
+                <textarea id="htmlOutputBox" class="details-box-textarea"></textarea>
+            </div>
+
+            <div class="details-box">
+                <div class="details-box-header">
+                    <label class="details-box-label" style="font-size: 12px;">MANUAL INPUT / SCRATCHPAD</label>
+                    <div class="scratchpad-header-buttons">
+                        <button id="copyScratchpadBtn" type="button" class="scratchpad-button" style="background:#17a2b8;">Copy All</button>
+                        <button id="selectAllScratchpadBtn" type="button" class="scratchpad-button">Select All</button>
+                        <button id="pasteToScratchpadBtn" type="button" class="scratchpad-button" style="background:#6c757d;">📋 Paste</button>
+                    </div>
+                </div>
+                <textarea id="manualInputBox" class="scratchpad-textarea"></textarea>
+            </div>
+        </div>
+
+        <!-- Right Column: Live Preview -->
+        <div class="preview-column">
+            <label class="details-box-label" style="display:block; margin-bottom:5px;">LIVE PREVIEW</label>
+            <div id="htmlPreview" class="preview-box"></div>
+        </div>
+    </div>
+</div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        &copy; <span id="footerYear"></span> (c) <a href="mailto:scottfyr@gmail.com" class="footer-link">Xeno Head</a> 2025 | 🧿 ⚡ WYSIWYG - v1.0
+        <button id="openRequestModalBtn" class="footer-button" title="Submit Feature Request">Reqs</button>
+    </div>
+</div>
+
+    <div id="customContextMenu" style="display:none; position:fixed; z-index:10000; background:var(--bg-color, white); color:var(--text-color, #333); border:1px solid var(--border-color, #ccc); box-shadow: 2px 2px 5px rgba(0,0,0,0.2); padding: 5px 0; min-width: 150px; border-radius: 4px; font-family: sans-serif;">
+        <div id="favoriteContextItem" style="padding: 8px 15px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border-color, #eee);">⭐ Favorite / Unfavorite</div>
+    </div>
+
+<script>
+    // Initialize Cost Calculator conditions from the server-side JSON
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const response = await fetch('/api/cost_calc.json');
+            if (response.ok) {
+                const data = await response.json();
+                const select = document.getElementById('calcCondition');
+                if (select && data.Cost_calulation) {
+                    select.innerHTML = data.Cost_calulation.map(c => `<option value="${c}">${c}</option>`).join('');
+                }
+            }
+        } catch (err) {
+            console.error("Failed to load cost calculator config:", err);
+        }
+    });
+</script>
+<script src="app.js" defer></script>
+</body>
+</html>

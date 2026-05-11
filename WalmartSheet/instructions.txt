@@ -1,0 +1,68 @@
+SKU=(SKU from Builder tab)
+Music= Music (static)
+ProductID = UPC or GTIN
+Product Name= Artist - Album - Media Count Media Type (example: Mary J. Blige - The London Sessions - 2xLP Vinyl)
+Selling Price = Price (pull from Discogs)
+Shipping Weight (lbs) = (Text Box)
+Country of Origin - Substantial Transformation = (Text Box: Default to United States)
+Fulfillment Center ID = 10001373153 (static)
+Inventory Qty = (TExt Box: Default to 1)
+Site Description = Artist - Title - Media Count Media Type - Description (Description from Builder tab) - Label (From Build Tab) Cat# (From Builder tab) [[Example: Mary J. Blige - The London Sessions - 2xLP Vinyl - Factory Sealed with Featuring Sticker Gatefold 2014 USA 2XLP Vinyl with 12 Tracks - Capitol Records B002215901]]
+Key Features (+) = Blank Text box
+Key Features 1 (+) = Blank Text box
+Key Features 2 (+) = Blank Text box
+Main Image URL = = Blank Text box
+Is Prop 65 Warning Required = No (static)
+Condition = Text Box (default to New)
+Has Written Warranty = No
+Is Collectible = Y
+Unit = Each (text box)
+Measure = 1 (text box)
+Additional Image URL (+) = (text box)
+
+[[[[We will need a pull down menu to define the following]]]]
+
+Measure	= 
+Unit = 
+Measure = 
+Unit = 
+Measure = 
+Unit = 
+Measure =
+Unit = 
+
+[Pull down content]
+	LP, CD, Cassette, Blue-Ray, 7"
+	
+
+Type:,Measure,Unit,Measure,Unit,Measure,Unit,Measure,Unit
+Cassette:,1,in,5,in,6,oz,3,in
+CD:	1,in,5,in,6,oz,6,in
+DVD: 1,in,8,in,6,oz,6,in
+Blu-ray: 1,in,7,in,6,oz,6,in
+LP:	1,in,12,in,2,lb,12,in
+7":	1,in,7,in,6,oz,8,in
+
+Has Parental Advisory Label = (Pull down) Yes/No (Default to NO)
+Manufacturer Part Number = Cat#
+
+[[[[[The pulldowns.json file is already located in the WalmartSheet directory]]]]
+
+Media Format (+) = (Pull down, populate from Builder tab)
+	Pull down contains: (Should be populated with a pulldown.json file that we will add an editor for later)		
+
+Music Genre (+) (Pull down, Pull from Discogs)
+	Pull down contains: (Should be populated with a pulldown.json that we will add an editor for later)
+			
+Music Media Format (+) = (Pull down, Pull from Discogs)
+	Pull down contains: (Should be populated with a pulldown.json that we will add an editor for later))
+	
+
+Number of Discs = (text box) default: 1
+Original Release Date = (text box, pull from discogs)
+Performer (+) = (Band Name, text box, pull from discogs)
+Record Label - Pick 1 = (Label name, text box, pull from discogs)
+Title = (text box, pull from discogs, Album Name)
+Fulfillment Lag Time = (text box) default: 1
+Must ship alone? = (text box) default: No
+Site Start Date = (todays date, format yyyy-mm-dd)

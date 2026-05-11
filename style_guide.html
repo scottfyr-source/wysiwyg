@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WYSIWYG - Style Guide & CSS Editor</title>
+    <link rel="icon" type="image/png" href="/fyrlogo.png">
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        body { padding: 20px; background-color: #f4f4f4; color: #333; }
+        .guide-container { max-width: 1200px; margin: 0 auto; }
+        .guide-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .guide-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; color: #007bff; }
+        h3 { margin-top: 0; font-size: 14px; color: #666; text-transform: uppercase; }
+        .color-section-title { margin-top: 30px; border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-bottom: 15px; font-weight: bold; color: #444; }
+        
+        /* Color Grid */
+        .color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
+        .color-card { display: flex; align-items: flex-start; gap: 10px; padding: 10px; border: 1px solid #eee; border-radius: 6px; background: #fafafa; }
+        .color-swatch { width: 50px; height: 50px; border-radius: 6px; border: 1px solid #ccc; box-shadow: inset 0 0 5px rgba(0,0,0,0.1); cursor: pointer; flex-shrink: 0; }
+        input[type="color"].color-swatch { padding: 0; border: none; background: none; }
+        .color-info { display: flex; flex-direction: column; overflow: hidden; }
+        .color-name { font-weight: bold; font-size: 12px; color: #333; }
+        .color-hex { font-family: monospace; font-size: 11px; color: #666; }
+        .color-usage { font-size: 10px; color: #666; margin-top: 5px; max-height: 60px; overflow-y: auto; white-space: pre-wrap; line-height: 1.2; }
+
+        /* Button Grid */
+        .btn-grid { display: flex; flex-wrap: wrap; gap: 15px; }
+        .btn-card { border: 1px solid #eee; padding: 15px; border-radius: 6px; text-align: center; min-width: 150px; background: #fff; }
+        .btn-label { display: block; margin-top: 10px; font-family: monospace; font-size: 11px; color: #666; }
+
+        /* Font Section */
+        .font-list { display: flex; flex-direction: column; gap: 10px; }
+        .font-item { padding: 10px; border-bottom: 1px solid #eee; }
+        .font-name { font-size: 16px; margin-bottom: 5px; }
+        .font-meta { font-size: 11px; color: #888; font-family: monospace; }
+
+        /* Editor */
+        #cssEditor { width: 100%; height: 500px; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; padding: 15px; border: 1px solid #ccc; border-radius: 4px; background: #2d2d2d; color: #e0e0e0; resize: vertical; }
+        .actions { margin-top: 15px; text-align: right; }
+        .save-btn { background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .save-btn:hover { background: #218838; }
+
+        .selector-link { color: #007bff; cursor: pointer; margin-right: 3px; }
+        .selector-link:hover { text-decoration: underline; }
+        .highlight-flash { animation: flash-animation 1.5s ease-in-out; outline: 3px solid #ff0000 !important; box-shadow: 0 0 10px #ff0000; }
+        @keyframes flash-animation { 0% { background-color: rgba(255, 255, 0, 0.5); } 100% { background-color: transparent; } }
+        .reset-btn { margin-left: 5px; font-size: 10px; padding: 2px 6px; cursor: pointer; border: 1px solid #ccc; background: #eee; border-radius: 3px; color: #333; }
+        .reset-btn:hover { background: #ddd; }
+
+        /* Preview Modal */
+        .preview-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .preview-content { background-color: #fff; margin: 2vh auto; width: 95vw; height: 90vh; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .preview-header { padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; }
+        .preview-body { flex: 1; overflow: hidden; background: #fff; position: relative; }
+        #previewFrame { width: 100%; height: 100%; border: none; display: block; }
+    </style>
+</head>
+<body>
+    <div class="guide-container">
+        <div class="guide-header">
+            <h1>🎨 CSS Style Guide & Inspector</h1>
+            <div>
+                <button onclick="openPreview()" style="background: #17a2b8; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px; font-weight: bold;">👁️ Preview App</button>
+                <button onclick="window.close()" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Close</button>
+            </div>
+        </div>
+
+        <div class="guide-section">
+            <h2>Color Palette</h2>
+            
+            <h3 class="color-section-title">Global Variables (:root)</h3>
+            <div id="rootColorContainer" class="color-grid">Loading...</div>
+
+            <h3 class="color-section-title">Dark Mode Variables</h3>
+            <div id="darkColorContainer" class="color-grid">Loading...</div>
+
+            <h3 class="color-section-title">Hardcoded Colors</h3>
+            <div id="hardcodedColorContainer" class="color-grid">Loading...</div>
+        </div>
+
+        <div class="guide-section">
+            <h2>Buttons & UI Elements</h2>
+            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Detected button classes and IDs.</p>
+            <div id="btnContainer" class="btn-grid">Loading...</div>
+        </div>
+
+        <div class="guide-section">
+            <h2>Typography</h2>
+            <div id="fontContainer" class="font-list">Loading...</div>
+        </div>
+
+        <div class="guide-section">
+            <h2>Raw CSS Editor</h2>
+            <textarea id="cssEditor" spellcheck="false"></textarea>
+            <div class="actions">
+                <button class="save-btn" onclick="saveCSS()">💾 Save CSS Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let originalRootVars = new Map();
+        let originalDarkVars = new Map();
+
+        async function loadCSS() {
+            try {
+                const response = await fetch('/styles.css?t=' + new Date().getTime());
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const cssText = await response.text();
+                document.getElementById('cssEditor').value = cssText;
+                
+                // Capture original values for reset
+                originalRootVars.clear();
+                originalDarkVars.clear();
+                
+                const rootMatch = cssText.match(/:root\s*\{([^}]+)\}/);
+                if (rootMatch) {
+                    extractVarsToMap(rootMatch[1], originalRootVars);
+                }
+                const darkMatch = cssText.match(/\[data-theme="dark"\]\s*\{([^}]+)\}/);
+                if (darkMatch) {
+                    extractVarsToMap(darkMatch[1], originalDarkVars);
+                }
+
+                parseAndDisplay(cssText);
+            } catch (e) {
+                document.getElementById('rootColorContainer').innerHTML = `<p style="color:red">Failed to load CSS: ${e.message}</p>`;
+            }
+        }
+
+        function extractVarsToMap(block, map) {
+            const regex = /--([\w-]+):\s*([^;]+);/g;
+            let match;
+            while ((match = regex.exec(block)) !== null) {
+                map.set('--' + match[1], match[2].trim());
+            }
+        }
+
+        function parseAndDisplay(css) {
+          try {
+            // Helper to extract variables from a block
+            function extractVars(block) {
+                const vars = [];
+                const regex = /--([\w-]+):\s*([^;]+);/g;
+                let match;
+                while ((match = regex.exec(block)) !== null) {
+                    vars.push({ name: '--' + match[1], value: match[2].trim() });
+                }
+                return vars;
+            }
+
+            let rootVars = [];
+            let darkVars = [];
+            
+            // 1. Find :root block
+            const rootMatch = css.match(/:root\s*\{([^}]+)\}/);
+            if (rootMatch) rootVars = extractVars(rootMatch[1]);
+
+            // 2. Find Dark Mode block
+            const darkMatch = css.match(/\[data-theme="dark"\]\s*\{([^}]+)\}/);
+            if (darkMatch) darkVars = extractVars(darkMatch[1]);
+
+            // 3. Scan for Usages & Hardcoded
+            const usageMap = {}; // name -> [selectors]
+            const hardcoded = []; // { value, selector }
+            
+            // Remove comments to avoid false positives
+            const cleanCss = css.replace(/\/\*[\s\S]*?\*\//g, '');
+            
+            const ruleRegex = /([^{}]+)\{([^}]+)\}/g;
+            let ruleMatch;
+            while ((ruleMatch = ruleRegex.exec(cleanCss)) !== null) {
+                const selector = ruleMatch[1].trim();
+                const body = ruleMatch[2];
+                
+                // Skip definition blocks for usage counting
+                if (selector.includes(':root') || selector.includes('data-theme="dark"')) continue;
+
+                // Check for var usage
+                rootVars.concat(darkVars).forEach(v => {
+                    if (body.includes(`var(${v.name})`)) {
+                        if (!usageMap[v.name]) usageMap[v.name] = [];
+                        usageMap[v.name].push(selector);
+                    }
+                });
+
+                // Check for hardcoded hex
+                const hexRegex = /:\s*(#[0-9a-fA-F]{3,6})\b/g;
+                let hMatch;
+                while ((hMatch = hexRegex.exec(body)) !== null) {
+                    const val = hMatch[1];
+                    hardcoded.push({ value: val, selector: selector });
+                }
+            }
+
+            // Group hardcoded by value
+            const hardcodedGrouped = {};
+            hardcoded.forEach(h => {
+                const key = h.value.toLowerCase();
+                if (!hardcodedGrouped[key]) hardcodedGrouped[key] = { value: h.value, selectors: [] };
+                hardcodedGrouped[key].selectors.push(h.selector);
+            });
+
+            try {
+                renderColors('rootColorContainer', rootVars, usageMap, true, false, originalRootVars);
+            } catch (e) { document.getElementById('rootColorContainer').innerHTML = `<p style="color:red">Error: ${e.message}</p>`; }
+            
+            try {
+                renderColors('darkColorContainer', darkVars, usageMap, true, true, originalDarkVars);
+            } catch (e) { document.getElementById('darkColorContainer').innerHTML = `<p style="color:red">Error: ${e.message}</p>`; }
+            
+            try {
+                renderColors('hardcodedColorContainer', Object.values(hardcodedGrouped).map(h => ({ name: h.value, value: h.value, selectors: h.selectors })), false, false, null);
+            } catch (e) { document.getElementById('hardcodedColorContainer').innerHTML = `<p style="color:red">Error: ${e.message}</p>`; }
+
+            // 2. Parse Buttons
+            const btnContainer = document.getElementById('btnContainer');
+            btnContainer.innerHTML = '';
+            
+            // Find selectors that look like buttons
+            const btnSelectors = [];
+            // Regex for selectors starting with .btn, #...Btn, or button
+            const btnRuleRegex = /([^{}]+)\s*\{([^}]+)\}/g;
+            let btnMatch;
+            while ((btnMatch = btnRuleRegex.exec(css)) !== null) {
+                const selector = btnMatch[1].trim();
+                const body = btnMatch[2];
+                
+                if (selector.includes('btn') || selector.includes('button') || selector.includes('Btn')) {
+                    // Clean selector (remove :hover etc for display)
+                    const cleanSel = selector.split(':')[0].trim();
+                    if (!btnSelectors.includes(cleanSel) && !cleanSel.includes('@keyframes')) {
+                        btnSelectors.push(cleanSel);
+                    }
+                }
+            }
+
+            btnSelectors.forEach(sel => {
+                // Create a dummy button
+                const div = document.createElement('div');
+                div.className = 'btn-card';
+                
+                // Create element based on selector type
+                let elType = 'button';
+                let className = '';
+                let idName = '';
+                
+                if (sel.startsWith('.')) className = sel.substring(1);
+                else if (sel.startsWith('#')) idName = sel.substring(1);
+                
+                // We render it inside the card. Note: Styles might conflict with card styles, 
+                // but since we loaded styles.css, they should render as intended.
+                div.innerHTML = `
+                    <button class="${className}" id="${idName}" style="position:static; margin:0;">${sel}</button>
+                    <span class="btn-label">${sel}</span>
+                `;
+                btnContainer.appendChild(div);
+            });
+
+            // 3. Parse Fonts
+            const fontContainer = document.getElementById('fontContainer');
+            fontContainer.innerHTML = '';
+            const fontRegex = /font-family:\s*([^;]+);/g;
+            const fonts = new Set();
+            while ((match = fontRegex.exec(css)) !== null) {
+                fonts.add(match[1].trim());
+            }
+            
+            fonts.forEach(f => {
+                const div = document.createElement('div');
+                div.className = 'font-item';
+                div.innerHTML = `
+                    <div class="font-name" style="font-family: ${f};">The quick brown fox jumps over the lazy dog.</div>
+                    <div class="font-meta">${f}</div>
+                `;
+                fontContainer.appendChild(div);
+            });
+          } catch (err) {
+              console.error(err);
+              document.getElementById('rootColorContainer').innerHTML = `<p style="color:red">Critical Parser Error: ${err.message}</p>`;
+          }
+        }
+
+        function renderColors(containerId, colors, usageMap, isVariable, isDark, originalMap) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            if (colors.length === 0) {
+                container.innerHTML = '<p style="color:#999; font-style:italic;">No colors found.</p>';
+                return;
+            }
+
+            colors.forEach(c => {
+                const selectors = isVariable ? (usageMap[c.name] || []) : c.selectors;
+                const uniqueSelectors = [...new Set(selectors)];
+                
+                const div = document.createElement('div');
+                div.className = 'color-card';
+                
+                let swatchHtml = '';
+                let resetHtml = '';
+
+                if (isVariable) {
+                    const hexVal = colorToHex(c.value);
+                    swatchHtml = `<input type="color" class="color-swatch" value="${hexVal}" oninput="updateVariable('${c.name}', this.value, ${isDark})">`;
+                    
+                    // Check for reset
+                    if (originalMap && originalMap.has(c.name)) {
+                        const origVal = originalMap.get(c.name);
+                        // Compare current value with original (simple string check)
+                        if (origVal !== c.value) {
+                            resetHtml = `<button class="reset-btn" onclick="resetVariable('${escapeStr(c.name)}', '${escapeStr(origVal)}', ${isDark})">↺ Reset</button>`;
+                        }
+                    }
+                } else {
+                    swatchHtml = `<div class="color-swatch" style="background-color: ${c.value}; cursor: default;" title="Hardcoded"></div>`;
+                }
+
+                const usageHtml = uniqueSelectors.length > 0 
+                    ? uniqueSelectors.map(s => `<span class="selector-link" onclick="highlightSelector('${escapeStr(s)}')">${s}</span>`).join(', ')
+                    : 'Unused / Indirect';
+
+                div.innerHTML = `
+                    ${swatchHtml}
+                    <div class="color-info">
+                        <span class="color-name" title="${c.name}">${c.name} ${resetHtml}</span>
+                        <span class="color-hex">${c.value}</span>
+                        <div class="color-usage" title="${uniqueSelectors.join('\n')}">Used in: ${usageHtml}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function escapeStr(str) {
+            return (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n').replace(/\r/g, '');
+        }
+
+        const ctx = document.createElement('canvas').getContext('2d');
+        function colorToHex(color) {
+            ctx.fillStyle = color;
+            return ctx.fillStyle;
+        }
+
+        window.updateVariable = function(name, value, isDark) {
+            const editor = document.getElementById('cssEditor');
+            let css = editor.value;
+            
+            // Simple scoped replacement
+            const blockStartStr = isDark ? '[data-theme="dark"]' : ':root';
+            const startIdx = css.indexOf(blockStartStr);
+            
+            if (startIdx !== -1) {
+                const endIdx = css.indexOf('}', startIdx);
+                if (endIdx !== -1) {
+                    const block = css.substring(startIdx, endIdx);
+                    const regex = new RegExp(`(${name}:\\s*)([^;]+)(;)`);
+                    const newBlock = block.replace(regex, `$1${value}$3`);
+                    editor.value = css.substring(0, startIdx) + newBlock + css.substring(endIdx);
+                }
+            }
+        }
+
+        window.resetVariable = function(name, value, isDark) {
+            updateVariable(name, value, isDark);
+            // Re-parse to update UI (remove reset button, update hex text)
+            parseAndDisplay(document.getElementById('cssEditor').value);
+        }
+
+        let previewWindow = null;
+
+        window.highlightSelector = function(selector) {
+            // 1. Highlight in Guide (if exists)
+            try {
+                const elements = document.querySelectorAll(selector);
+                if (elements.length > 0) {
+                    elements.forEach(el => {
+                        el.classList.remove('highlight-flash');
+                        void el.offsetWidth; 
+                        el.classList.add('highlight-flash');
+                    });
+                    elements[0].scrollIntoView({behavior: "smooth", block: "center"});
+                }
+            } catch (e) { }
+
+            // 2. Highlight in Preview Window
+            if (previewWindow && !previewWindow.closed) {
+                try {
+                    const pElements = previewWindow.document.querySelectorAll(selector);
+                    if (pElements.length > 0) {
+                        pElements.forEach(el => {
+                            el.classList.remove('highlight-flash');
+                            void el.offsetWidth;
+                            el.classList.add('highlight-flash');
+                        });
+                        pElements[0].scrollIntoView({behavior: "smooth", block: "center"});
+                        previewWindow.focus();
+                    }
+                } catch (e) {
+                    console.warn("Preview selector error:", e);
+                }
+            }
+        }
+
+        function openPreview() {
+            if (previewWindow && !previewWindow.closed) {
+                previewWindow.focus();
+                return;
+            }
+            
+            previewWindow = window.open('/', 'wysiwyg_preview', 'width=1200,height=800');
+            
+            // Poll for load to inject styles
+            const interval = setInterval(() => {
+                if (previewWindow.closed) {
+                    clearInterval(interval);
+                    return;
+                }
+                if (previewWindow.document.readyState === 'complete') {
+                    clearInterval(interval);
+                    updatePreviewStyles();
+                }
+            }, 500);
+        }
+
+        function updatePreviewStyles() {
+            if (!previewWindow || previewWindow.closed) return;
+            
+            const css = document.getElementById('cssEditor').value;
+            const doc = previewWindow.document;
+            
+            let styleTag = doc.getElementById('preview-injected-style');
+            if (styleTag) styleTag.remove();
+            
+            styleTag = doc.createElement('style');
+            styleTag.id = 'preview-injected-style';
+            
+            // Include highlight class definition
+            const extraStyles = `
+                .highlight-flash { animation: flash-animation 1.5s ease-in-out; outline: 3px solid #ff0000 !important; box-shadow: 0 0 10px #ff0000; }
+                @keyframes flash-animation { 0% { background-color: rgba(255, 255, 0, 0.5); } 100% { background-color: transparent; } }
+            `;
+            
+            styleTag.textContent = extraStyles + css;
+            doc.head.appendChild(styleTag);
+        }
+
+        async function saveCSS() {
+            const newCSS = document.getElementById('cssEditor').value;
+            try {
+                const resp = await fetch('/save-css', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ css: newCSS })
+                });
+                const res = await resp.json();
+                if (res.status === 'success') {
+                    alert("CSS Saved! Reloading preview...");
+                    // Reload the stylesheet in the page to reflect changes immediately
+                    const links = document.getElementsByTagName('link');
+                    for (let i = 0; i < links.length; i++) {
+                        if (links[i].getAttribute('rel') == 'stylesheet') {
+                            const href = links[i].getAttribute('href').split('?')[0];
+                            links[i].setAttribute('href', href + '?t=' + new Date().getTime());
+                        }
+                    }
+                    parseAndDisplay(newCSS);
+                } else {
+                    alert("Error saving: " + res.message);
+                }
+            } catch (e) {
+                alert("Connection error: " + e);
+            }
+        }
+
+        loadCSS();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+pyinstaller --noconfirm --onefile --windowed --icon="fyrlogo.ico" --add-data "fyrlogo.png;." --add-data "fyrlogo.ico;." --add-data "fyrlogo_alert.png;." --paths="C:\Tools\FreeSimpleGUI" --name="FYRChatest" main.py

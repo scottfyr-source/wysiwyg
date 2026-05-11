@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "ms-python.vscode-pylance",
+    "formulahendry.code-runner",
+    "ms-python.vscode-python-envs"
+  ]
+}

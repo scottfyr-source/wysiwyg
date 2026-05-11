@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walmart Spreadsheet Exporter</title>
+    <link rel="icon" href="/WalmartSheet/walmart.png" type="image/png">
+    <style>
+        :root { 
+            --primary: #0071ce; --secondary: #28a745; --danger: #dc3545;
+            --bg: #f4f4f4; --surface: #ffffff; --border: #ccc; 
+            --text-main: #333; --text-light: #666;
+        }
+        [data-theme="dark"] { 
+            --primary: #4da3ff; --secondary: #34c759; --danger: #ff453a;
+            --bg: #121212; --surface: #1e1e1e; --border: #444; 
+            --text-main: #e0e0e0; --text-light: #aaa;
+        }
+        
+        [data-theme="dark"] input, 
+        [data-theme="dark"] select, 
+        [data-theme="dark"] textarea { background-color: #2d2d2d; color: #fff; border-color: #555; }
+        [data-theme="dark"] input:read-only { background-color: #3a3a3a; color: #aaa; }
+        [data-theme="dark"] button:disabled { background-color: #333; color: #777; }
+        [data-theme="dark"] .preview-table th { background-color: #2c2c2c; }
+        [data-theme="dark"] .preview-table td { border-color: #444; }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text-main); padding: 20px; margin: 0; transition: background-color 0.3s, color 0.3s; }
+        .container { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+        
+        .sidebar { background: var(--surface); padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: fit-content; }
+        .sidebar h2 { margin-top: 0; color: var(--primary); font-size: 1.2em; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
+        .control-group { margin-bottom: 15px; }
+        .control-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9em; color: var(--text-light); }
+        .control-group input, .control-group select, .control-group textarea { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; box-sizing: border-box; background: var(--surface); color: var(--text-main); }
+        button { background-color: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; transition: background-color 0.2s; }
+        button:hover:not(:disabled) { filter: brightness(1.1); }
+        button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; background: var(--surface); padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .field-group { display: flex; flex-direction: column; }
+        .field-group label { font-size: 0.8em; color: var(--text-light); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
+        .field-group input, .field-group select, .field-group textarea { padding: 6px; border: 1px solid var(--border); border-radius: 3px; font-size: 0.9em; background: var(--surface); color: var(--text-main);}
+        .field-group input:read-only { background-color: #e9ecef; }
+        
+        .full-width { grid-column: 1 / -1; }
+        .header-row { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .header-row h1 { margin: 0; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        .header-row img { height: 32px; }
+
+        #toast { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 16px; position: fixed; z-index: 1001; left: 50%; bottom: 30px; font-size: 17px; }
+        #toast.show { visibility: visible; -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @-webkit-keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @-webkit-keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="sidebar" id="sidebar">
+        <h2>Data Source</h2>
+        <div class="control-group">
+            <label for="walmartScrapeUrl">Direct Discogs Scrape</label>
+            <input type="text" id="walmartScrapeUrl" placeholder="Paste URL here..." onclick="pasteFromClipboard(this)">
+            <button id="walmartScrapeBtn" onclick="runWalmartScrape()">4. Quick Scrape</button>
+        </div>
+        <div class="control-group">
+            <button id="loadFromBuilderBtn">1. Load from Builder</button>
+        </div>
+        <div class="control-group">
+            <label for="discogsUrl">Load from Discogs URL</label>
+            <input type="text" id="discogsUrl" placeholder="Click to paste URL..." onfocus="this.select()" onclick="pasteFromClipboard(this)">
+             <button id="fetchDiscogsBtn">2. Load from Discogs</button>
+        </div>
+        <hr>
+        <h2>Controls</h2>
+         <div class="control-group">
+            <label for="mediaType">Media Type (for Dimensions)</label>
+            <select id="mediaType" onchange="updateDimensions()">
+                <option value="">-- Select Type --</option>
+                <option value="LP">LP</option>
+                <option value="CD">CD</option>
+                <option value="Cassette">Cassette</option>
+                <option value="DVD">DVD</option>
+                <option value="Blu-ray">Blu-ray</option>
+                <option value="7">7"</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="rowOutput">Tab-Separated Row (For Excel)</label>
+            <textarea id="rowOutput" rows="8" readonly onclick="this.select()"></textarea>
+            <button id="generateRowBtn" style="background-color: var(--secondary);">3. Generate & Copy Row</button>
+        </div>
+        <hr>
+        <h2>Advanced</h2>
+        <div class="control-group">
+            <button id="clearAllBtn" style="background-color: var(--danger);" onclick="clearAllFields()">Clear All Fields</button>
+            <button id="exitBtn" style="background-color: #6c757d; margin-top: 10px;">❌ Exit</button>
+        </div>
+    </div>
+
+    <div class="form-grid" id="mainForm">
+        <div class="header-row">
+            <h1><img src="/WalmartSheet/walmart.png" alt="Logo"> Walmart Exporter</h1>
+            <span style="font-size: 0.9em; color: var(--text-light);">Fields marked (*) are static</span>
+        </div>
+
+        <div class="field-group full-width"><label>Product Name</label><input type="text" id="productName"></div>
+        <div class="field-group full-width"><label>Site Description</label><textarea id="siteDescription" rows="2"></textarea></div>
+
+        <div class="field-group" style="grid-column: span 3;"><label>SKU</label><input type="text" id="sku" style="width: 100%;"></div>
+        <div class="field-group" style="min-width: 70px; max-width: 90px;"><label>Music (*)</label><input type="text" id="music" value="Music" readonly></div>
+        <div class="field-group"><label>Product ID Type</label><select id="productIdType"><option value="UPC">UPC</option><option value="GTIN">GTIN</option><option value="ISBN">ISBN</option></select></div>
+        <div class="field-group"><label>Product ID</label><input type="text" id="productId"></div>
+        
+        <div class="field-group"><label>Selling Price</label><input type="text" id="sellingPrice"></div>
+        <div class="field-group"><label>Shipping Weight (lbs)</label><select id="shippingWeight"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+        <div class="field-group"><label>Country of Origin</label><select id="countryOfOrigin"></select></div>
+        <div class="field-group" style="display: none;"><label>Fulfillment Center ID (*)</label><input type="text" id="fulfillmentId" value="10001373153" readonly></div>
+        <div class="field-group"><label>Inventory Qty</label><input type="text" id="inventoryQty" value="1"></div>
+
+        <div class="field-group full-width">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <label style="margin: 0;">Key Features (+)</label>
+                <button type="button" id="editFeaturesBtn" style="width: auto; padding: 2px 6px; margin: 0; font-size: 10px; background-color: var(--secondary);">✏️ Edit Features</button>
+            </div>
+            <input type="text" id="keyFeatures" list="keyFeaturesList">
+        </div>
+        <div class="field-group full-width"><label>Key Features 1 (+)</label><input type="text" id="keyFeatures1" list="keyFeaturesList"></div>
+        <div class="field-group full-width"><label>Key Features 2 (+)</label><input type="text" id="keyFeatures2" list="keyFeaturesList"></div>
+        <datalist id="keyFeaturesList"></datalist>
+
+        <div class="field-group" style="display: none;"><label>Is Prop 65 Warning (*)</label><input type="text" id="prop65" value="No" readonly></div>
+        <div class="field-group"><label>Condition</label><select id="condition" name="condition"><option value="">-- Select --</option><option value="New">New</option><option value="Used">Used</option></select></div>
+        <div class="field-group" style="display: none;"><label>Has Warranty (*)</label><input type="text" id="warranty" value="No" readonly></div>
+        <div class="field-group" style="display: none;"><label>Is Collectible (*)</label><input type="text" id="collectible" value="Y" readonly></div> 
+
+        <div class="field-group full-width">
+            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                <div style="flex: 1;"><label for="mainImageUrl">Main Image URL</label><input type="text" id="mainImageUrl" placeholder="Click to paste URL..." onfocus="this.select()" onclick="pasteFromClipboard(this)"></div>
+                <div style="flex: 1;"><label for="additionalImageUrl">Additional Image URL (+)</label><input type="text" id="additionalImageUrl" placeholder="Click to paste URL..." onfocus="this.select()" onclick="pasteFromClipboard(this)"></div>
+                <a href="https://www.musicstack.com/seller/image_upload.cgi" target="_blank" style="text-decoration: none; margin-bottom: 0;"><button type="button" style="width: 100%; margin: 0; background-color: #ff9900; color: black; white-space: nowrap; height: 31px;">MusicStack</button></a>
+            </div>
+        </div>
+
+        <div class="field-group"><label>Unit (*)</label><input type="text" id="unit1" value="Each" readonly></div>
+        <div class="field-group"><label>Measure (*)</label><input type="text" id="measure1" value="1" readonly></div>
+        <div class="field-group"><label>Measure (Depth)</label><input type="text" id="measureDepth"></div>
+        <div class="field-group"><label>Unit (*)</label><input type="text" id="unitDepth" value="in" readonly></div>
+        <div class="field-group"><label>Measure (Width)</label><input type="text" id="measureWidth"></div>
+        <div class="field-group"><label>Unit (*)</label><input type="text" id="unitWidth" value="in" readonly></div>
+        <div class="field-group"><label>Measure (Weight)</label><input type="text" id="measureWeight"></div>
+        <div class="field-group"><label>Unit</label><input type="text" id="unitWeight" value="oz"></div>
+        <div class="field-group"><label>Measure (Height)</label><input type="text" id="measureHeight"></div>
+        <div class="field-group"><label>Unit (*)</label><input type="text" id="unitHeight" value="in" readonly></div>
+
+        <div class="field-group"><label>Has Parental Advisory</label><select id="parentalAdvisory"><option value="No">No</option><option value="Yes">Yes</option></select></div>
+        <div class="field-group"><label>Manufacturer Part Number</label><input type="text" id="mpn"></div>
+        <div class="field-group"><label>Media Format (+)</label><select id="mediaFormat"></select></div>
+        <div class="field-group"><label>Music Genre (+)</label><select id="musicGenre"></select></div>
+        <div class="field-group"><label>Music Media Format (+)</label><select id="musicMediaFormat"></select></div>
+        
+        <div class="field-group"><label>Number of Discs</label><input type="text" id="numDiscs" value="1"></div>
+        <div class="field-group"><label>Original Release Date</label><input type="text" id="origRelDate" placeholder="YYYY-MM-DD"></div>
+        <div class="field-group"><label>Performer (+)</label><input type="text" id="performer"></div>
+        <div class="field-group"><label>Record Label</label><input type="text" id="recordLabel"></div>
+        <div class="field-group"><label>Title</label><input type="text" id="title"></div>
+        
+        <div class="field-group"><label>Fulfillment Lag Time</label><input type="text" id="lagTime" value="1"></div>
+        <div class="field-group"><label>Must ship alone?</label><input type="text" id="shipAlone" value="No"></div>
+        <div class="field-group"><label>Site Start Date</label><input type="text" id="siteStartDate"></div>
+    </div>
+</div>
+
+<div id="featuresModal" style="display: none; position: fixed; z-index: 1002; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+    <div style="background-color: var(--surface); padding: 20px; border-radius: 8px; width: 400px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        <h3 style="margin-top: 0; color: var(--primary);">Edit Key Features</h3>
+        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+            <input type="text" id="newFeatureInput" placeholder="Add new feature..." style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--text-main);">
+            <button type="button" id="addFeatureBtn" style="width: auto; margin: 0; padding: 0 15px; background-color: var(--primary);">Add</button>
+        </div>
+        <div id="featuresListContainer" style="overflow-y: auto; flex: 1; border: 1px solid var(--border); border-radius: 4px; padding: 5px; background: var(--bg); display: flex; flex-direction: column; gap: 5px;">
+            <!-- List items injected here -->
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+            <button type="button" id="closeFeaturesBtn" style="width: auto; margin: 0; background-color: var(--text-light);">Cancel</button>
+            <button type="button" id="saveFeaturesBtn" style="width: auto; margin: 0; background-color: var(--secondary);">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+    const CSV_HEADER = "SKU,Music,Product ID Type,Product ID,Product Name,Selling Price,Shipping Weight (lbs),Country of Origin - Substantial Transformation,Fulfillment Center ID,Inventory Qty,Pre Order,Site Description,Key Features (+),Key Features 1 (+),Key Features 2 (+),Main Image URL,Is Prop 65 Warning Required,Condition,Has Written Warranty,Is Collectible,Unit,Measure,Additional Image URL (+),Measure,Unit,Measure,Unit,Measure,Unit,Measure,Unit,Autographed by (+),Awards Won (+),Brand Name,California Prop 65 Warning Text,Certification Type,Character (+),Character Group (+),Children Product Certificate Document Reference ID,Children Product Test Report Document Reference ID,Composer (+),Configuration,Count Per Pack,Digital Audio File Format (+),Measure,Unit,Edition,General Certificate of Conformity Document Reference ID,Has Parental Advisory Label,Is Edited,Is Enhanced,Language,Manufacturer Name,Manufacturer Part Number,Media Format (+),Model Number,Multipack Quantity,Music Genre (+),Music Media Format (+),Music Producer,Music Release Type,Music Subgenre (+),Net Content Statement,Number in Series,Number of Discs,Number of Pieces,Number of Tracks,Occasion (+),Original Release Date,Parental Advisory Label URL (+),Performer (+),Record Label - Pick 1,Series Title,Songwriter,Sports League (+),Sports Team (+),Target Audience (+),Third Party Accreditation Symbol on Product Package Code (+),Title,Total Count,Track Duration,Track Name,Track Number,Warranty Text,Warranty URL,Variant Group ID,Variant Attribute Names (+),Is Primary Variant,Swatch Image URL,Swatch Variant Attribute,ZIP Codes,States,State Restrictions Reason,Product is or Contains an Electronic Component?,Product is or Contains a Chemical, Aerosol or Pesticide?,Product is or Contains this Battery Type,Fulfillment Lag Time,Ships in Original Packaging,Must ship alone?,Is Preorder,Release Date,Site Start Date,Site End Date,External Product ID Type,External Product ID,Product Id Update,SKU Update,MSRP,Maximum Seller Allowed Price,Minimum Seller Allowed Price,Repricer Strategy,Product Package Weight (lbs),Product Package Dimensions Depth (in),Product Package Dimensions Width (in),Product Package Dimensions Height (in)";
+    const DIM_MAP = { 'Cassette':{d:1,w:5,wt:6,wu:'oz',h:3},'CD':{d:1,w:5,wt:6,wu:'oz',h:6},'DVD':{d:1,w:8,wt:6,wu:'oz',h:6},'Blu-ray':{d:1,w:7,wt:6,wu:'oz',h:6},'LP':{d:1,w:12,wt:2,wu:'lb',h:12},'7':{d:1,w:7,wt:6,wu:'oz',h:8} };
+
+    let pulldownData = {}; // Global variable to store pulldown data
+    let genreMap = {};     // Global variable to store Discogs->Walmart mapping
+    let tempFeatures = [];
+
+    document.addEventListener('DOMContentLoaded', async () => { // Make event listener async
+        const savedTheme = localStorage.getItem('wysiwyg_theme');
+        if (savedTheme === 'dark') document.body.setAttribute('data-theme', 'dark');
+
+        document.getElementById('loadFromBuilderBtn').addEventListener('click', loadFromBuilder);
+        document.getElementById('fetchDiscogsBtn').addEventListener('click', fetchDiscogsData);
+        document.getElementById('generateRowBtn').addEventListener('click', generateAndCopyRow);
+        document.getElementById('exitBtn').addEventListener('click', exitWalmartSheet);
+
+        document.getElementById('editFeaturesBtn').addEventListener('click', openFeaturesModal);
+        document.getElementById('closeFeaturesBtn').addEventListener('click', closeFeaturesModal);
+        document.getElementById('addFeatureBtn').addEventListener('click', addNewFeature);
+        document.getElementById('saveFeaturesBtn').addEventListener('click', saveFeatures);
+        
+        document.getElementById('newFeatureInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addNewFeature();
+            }
+        });
+
+        document.getElementById('siteStartDate').value = localDateStr();
+
+        // Auto-switch UPC/GTIN when user manually types in Product ID
+        document.getElementById('productId').addEventListener('input', (e) => {
+            const digits = e.target.value.replace(/\D/g, '');
+            if (digits.length > 0) {
+                document.getElementById('productIdType').value = digits.length >= 13 ? 'GTIN' : 'UPC';
+            }
+        });
+        
+        initializeDropdowns();
+        await initializeDropdowns(); // Await dropdowns to be ready
+        await loadFromBuilder();     // Auto-run builder on first load
+        await fetchDiscogsData();   // Then auto-run Discogs on first load
+    });
+
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.style.backgroundColor = isError ? 'var(--danger)' : '#333';
+        toast.className = 'show';
+        setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3000);
+    }
+
+    // Returns today's date as YYYY-MM-DD in CST (Central Standard Time)
+    function localDateStr() {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/Chicago',
+            year: 'numeric', month: '2-digit', day: '2-digit'
+        }).formatToParts(new Date());
+        const p = {};
+        parts.forEach(({ type, value }) => { p[type] = value; });
+        return `${p.year}-${p.month}-${p.day}`;
+    }
+
+    async function pasteFromClipboard(targetElement) {
+        if (targetElement.value && targetElement.value.trim() !== '') return;
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text) targetElement.value = text.trim();
+        } catch (err) { 
+            console.error('Paste failed:', err);
+            // Optionally alert if it failed due to permissions
+            if (err.name === 'NotAllowedError') {
+                showToast("Clipboard permission denied.", true);
+            }
+        }
+    }
+
+    async function initializeDropdowns() {
+        try {
+            // Fetch pulldowns
+            const resp = await fetch('/WalmartSheet/pulldowns.json');
+            if (!resp.ok) throw new Error(`Failed to fetch pulldowns.json (${resp.status})`);
+            const data = await resp.json();
+            pulldownData = data; // Store globally
+
+            // Fetch genre map
+            try {
+                const mapResp = await fetch('/WalmartSheet/genre_map.json');
+                if (mapResp.ok) {
+                    genreMap = await mapResp.json();
+                    console.log("Genre map loaded:", Object.keys(genreMap).length, "genres mapped");
+                }
+            } catch (mapErr) {
+                console.warn("Failed to load genre_map.json, falling back to basic matching.", mapErr);
+            }
+
+            populateSelect('mediaFormat', data.media_format || data['Media Format']);
+            populateSelect('musicMediaFormat', data.music_media_format || data['Music Media Format']);
+            populateSelect('musicGenre', data.music_genre || data['Music Genre']);
+            populateSelect('countryOfOrigin', data.country_of_origin || data['Country of Origin'], 'United States');
+
+            const kfList = document.getElementById('keyFeaturesList');
+            const features = data.key_features || data['Key Features'];
+            if (kfList && features) {
+                kfList.innerHTML = '';
+                features.forEach(feat => {
+                    const opt = document.createElement('option');
+                    opt.value = feat;
+                    kfList.appendChild(opt);
+                });
+            }
+        } catch (e) {
+            pulldownData = { country_of_origin: ['United States', 'Canada', 'Mexico', 'United Kingdom'] }; // Ensure pulldownData has a fallback
+            console.error("Failed to initialize dropdowns:", e);
+            showToast(e.message, true);
+        }
+    }
+
+    function populateSelect(id, options, defaultValue = "") {
+        const sel = document.getElementById(id);
+        if (!sel || !options) return;
+        const currentVal = sel.value;
+        if (!Array.isArray(options)) {
+            console.error(`populateSelect: Options for '${id}' is not an array. Received:`, options);
+            sel.innerHTML = '<option value="">Error loading options</option>';
+            return;
+        }
+        sel.innerHTML = '<option value="">-- Select --</option>';
+        options.forEach(opt => {
+            const el = document.createElement('option');
+            el.value = opt;
+            el.textContent = opt;
+            sel.appendChild(el);
+        });
+        if (defaultValue && !currentVal) sel.value = defaultValue;
+        else if(currentVal) sel.value = currentVal;
+    }
+    
+    function populateFieldIfEmpty(id, value) {
+        const el = document.getElementById(id);
+        if (el && !el.value && value) {
+            el.value = value;
+        }
+    }
+
+    function setDropdownValueWithFallback(id, preferredValue, fallbackValue = "Pop", force = false) {
+        const sel = document.getElementById(id);
+        if (!sel || (sel.value && !force)) return; 
+        
+        sel.value = preferredValue;
+        if (sel.value === preferredValue) return; 
+
+        let options = Array.from(sel.options).map(o => o.value).filter(v => v);
+        let match = options.find(o => o.toLowerCase() === preferredValue.toLowerCase());
+        
+        if (!match) {
+            const prefLower = preferredValue.toLowerCase();
+            if (prefLower.includes("metal")) match = options.find(o => o.toLowerCase().includes("metal"));
+            else if (prefLower.includes("rock")) match = options.find(o => o.toLowerCase() === "rock" || o.toLowerCase() === "pop rock" || o.toLowerCase() === "pop/rock");
+            else if (prefLower.includes("pop")) match = options.find(o => o.toLowerCase() === "pop" || o.toLowerCase() === "pop rock" || o.toLowerCase() === "pop/rock");
+            else if (prefLower.includes("hip hop") || prefLower.includes("rap")) match = options.find(o => o.toLowerCase() === "hip-hop" || o.toLowerCase() === "rap" || o.toLowerCase() === "rap / hip-hop");
+            else if (prefLower.includes("jazz")) match = options.find(o => o.toLowerCase() === "jazz");
+            else if (prefLower.includes("country")) match = options.find(o => o.toLowerCase() === "country");
+            else if (prefLower.includes("electronic") || prefLower.includes("techno") || prefLower.includes("house") || prefLower.includes("dance")) match = options.find(o => o.toLowerCase() === "dance & electronic" || o.toLowerCase() === "electronica" || o.toLowerCase() === "dance / dj");
+            else if (prefLower.includes("r&b") || prefLower.includes("soul")) match = options.find(o => o.toLowerCase() === "r&b" || o.toLowerCase() === "r&b / soul" || o.toLowerCase() === "r&b/soul" || o.toLowerCase() === "soul");
+            else if (prefLower.includes("folk")) match = options.find(o => o.toLowerCase() === "folk" || o.toLowerCase() === "folk music");
+            else if (prefLower.includes("blues")) match = options.find(o => o.toLowerCase() === "blues" || o.toLowerCase() === "blues rock");
+            else if (prefLower.includes("reggae")) match = options.find(o => o.toLowerCase() === "reggae" || o.toLowerCase() === "world / reggae");
+            else if (prefLower.includes("vinyl") || prefLower.includes("lp")) match = options.find(o => o.toLowerCase().includes("vinyl record") || o.toLowerCase() === "lp");
+        }
+        sel.value = match ? match : fallbackValue;
+    }
+
+    function applyExpertGenreMapping(discogs, force = true) {
+        if (!discogs) return;
+        let genreToSet = "";
+        const styles = discogs.styles || [];
+        const genres = discogs.genres || [];
+        const candidates = [...styles, ...genres];
+
+        for (let cand of candidates) {
+            const cLow = cand.toLowerCase();
+            for (let [walmartGenre, discogsStyles] of Object.entries(genreMap)) {
+                if (discogsStyles.some(s => s.toLowerCase() === cLow)) {
+                    genreToSet = walmartGenre;
+                    break;
+                }
+            }
+            if (genreToSet) break;
+        }
+
+        if (!genreToSet) {
+            const allStrings = candidates.map(s => s.toLowerCase());
+            if (allStrings.some(s => s.includes("metal"))) {
+                genreToSet = "Heavy Metal";
+            } else if (allStrings.some(s => s.includes("jazz"))) {
+                genreToSet = "Jazz";
+            } else {
+                const musicGenreSel = document.getElementById('musicGenre');
+                const dropdownOptions = Array.from(musicGenreSel.options).map(o => o.value).filter(v => v);
+
+                function findBestGenreMatch(cands) {
+                    for (let c of cands) {
+                        const cLow = c.toLowerCase();
+                        const exact = dropdownOptions.find(opt => opt.toLowerCase() === cLow);
+                        if (exact) return exact;
+                    }
+                    for (let c of cands) {
+                        const cLow = c.toLowerCase();
+                        const partial = dropdownOptions.find(opt => {
+                            const oLow = opt.toLowerCase();
+                            return cLow.startsWith(oLow + " ") || cLow === oLow;
+                        });
+                        if (partial) return partial;
+                    }
+                    return null;
+                }
+                genreToSet = findBestGenreMatch(styles) || findBestGenreMatch(genres) || "";
+            }
+        }
+        setDropdownValueWithFallback('musicGenre', genreToSet || 'Pop', 'Pop', force);
+    }
+
+    async function searchItunesForReleaseDate(artist, title) {
+        if (!artist || !title) return "";
+        try {
+            const query = encodeURIComponent(`${artist} ${title}`);
+            const resp = await fetch(`https://itunes.apple.com/search?term=${query}&entity=album&limit=1`);
+            if (!resp.ok) return "";
+            const data = await resp.json();
+            if (data.results && data.results.length > 0 && data.results[0].releaseDate) {
+                const year = data.results[0].releaseDate.substring(0, 4);
+                return `${year}-01-01`;
+            }
+        } catch (e) {
+            console.error("iTunes API error:", e);
+        }
+        return "";
+    }
+
+    async function loadFromBuilder() {
+        const btn = document.getElementById('loadFromBuilderBtn');
+        btn.textContent = 'Loading...';
+        btn.disabled = true;
+        
+        // Explicitly delete Product Name immediately to ensure a fresh pull
+        document.getElementById('productName').value = '';
+
+        try {
+            const contextResp = await fetch(`/api/walmart/cache-context?t=${Date.now()}`);
+            if (!contextResp.ok) throw new Error('Could not fetch data from builder. Generate data first.');
+            
+            const context = await contextResp.json();
+            if (!context.raw_text) throw new Error('No text found in builder data. Re-scrape item.');
+
+            const processResp = await fetch('/api/walmart/process-item', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(context)
+            });
+            if (!processResp.ok) throw new Error((await processResp.json()).message || `Server error ${processResp.status}`);
+            const data = await processResp.json();
+            
+            // Removed clearAllFields(false) so we don't wipe existing user edits!
+            
+            // SKU and Site Description: always force-overwrite from Builder Tab
+            if (context.sku) document.getElementById('sku').value = context.sku;
+            
+            let pName = data.productName || '';
+            let sDesc = data.siteDescription || '';
+            pName = pName.replace(/\bCD\b/g, 'Audio CD').replace(/Audio Audio CD/gi, 'Audio CD');
+            sDesc = sDesc.replace(/\bCD\b/g, 'Audio CD').replace(/Audio Audio CD/gi, 'Audio CD');
+            
+            // Force overwrite Product Name (don't use populateFieldIfEmpty here)
+            document.getElementById('productName').value = pName;
+
+            // Force-overwrite Site Description if builder produced one
+            if (sDesc) document.getElementById('siteDescription').value = sDesc;
+            else populateFieldIfEmpty('siteDescription', sDesc);
+            
+            populateFieldIfEmpty('performer', data.performer || '');
+            populateFieldIfEmpty('title', data.title || '');
+            populateFieldIfEmpty('recordLabel', data.recordLabel || '');
+            
+            let cleanMpnBuilder = (data.manufacturerPartNumber || '').replace(/\//g, '').replace(/\s+/g, ' ').trim();
+            populateFieldIfEmpty('mpn', cleanMpnBuilder);
+            
+            populateFieldIfEmpty('origRelDate', data.originalReleaseDate || '');
+            let currentRel1 = document.getElementById('origRelDate').value;
+            if (!currentRel1) {
+                const fetchedD1 = await searchItunesForReleaseDate(data.performer || '', data.title || '');
+                if (fetchedD1) populateFieldIfEmpty('origRelDate', fetchedD1);
+            }
+            setDropdownValueWithFallback('condition', data.condition || 'New', 'New', false);
+            
+            let mf = data.mediaFormat || '';
+            if (mf.toUpperCase() === 'DVD') mf = 'DVD-Audio';
+            setDropdownValueWithFallback('mediaFormat', mf, '', false);
+            
+            let mmf = data.musicMediaFormat || '';
+            if (mmf.toUpperCase() === 'DVD') mmf = 'DVD-Audio';
+            setDropdownValueWithFallback('musicMediaFormat', mmf, '', false);
+            
+            if (data.musicGenre) {
+                setDropdownValueWithFallback('musicGenre', data.musicGenre, 'Pop', false);
+            }
+
+            
+            const mediaTypeSelect = document.getElementById('mediaType');
+            if (!mediaTypeSelect.value) {
+                const fmt = (data.mediaFormat || "").toLowerCase();
+                if (fmt.includes('vinyl') || fmt.includes('lp')) {
+                    mediaTypeSelect.value = 'LP';
+                } else if (fmt.includes('cassette')) {
+                    mediaTypeSelect.value = 'Cassette';
+                } else if (fmt.includes('cd')) {
+                    mediaTypeSelect.value = 'CD';
+                } else if (fmt.includes('dvd')) {
+                    mediaTypeSelect.value = 'DVD';
+                } else if (fmt.includes('blu')) {
+                    mediaTypeSelect.value = 'Blu-ray';
+                }
+                updateDimensions();
+            }
+
+            populateFieldIfEmpty('siteStartDate', localDateStr());
+            
+            // Set the Discogs URL field for reference, but do NOT auto-trigger
+            // Load from Discogs when the user manually presses Load from Builder.
+            if (context.discogsUrl) {
+                document.getElementById('discogsUrl').value = context.discogsUrl;
+            }
+
+            showToast('✅ Data loaded from builder!');
+        } catch (error) {
+            showToast(error.message, true);
+        } finally {
+            btn.textContent = '1. Load from Builder';
+            btn.disabled = false;
+        }
+    }
+
+    async function runWalmartScrape() {
+        const urlInput = document.getElementById('walmartScrapeUrl');
+        const url = urlInput ? urlInput.value.trim() : "";
+        if (!url) return showToast("Please paste a Discogs URL.", true);
+
+        const scrapeBtn = document.getElementById('walmartScrapeBtn');
+        const originalText = scrapeBtn.innerText;
+        scrapeBtn.innerText = "⏳ Scraping...";
+        scrapeBtn.disabled = true;
+
+        try {
+            const resp = await fetch('/api/scrape-json', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url })
+            });
+
+            if (!resp.ok) throw new Error("Scrape failed. Ensure the URL is valid.");
+            const json = await resp.json();
+            if (json.status !== 'success') throw new Error(json.message);
+
+            const release = json.data.release;
+            const artist = release.artists.map(a => (a.anv || a.name).replace(/\s*\(\d+\)$/, '')).join(', ');
+            
+            // Construct raw text format exactly as the python parser expects it
+            const raw_text = `${artist} - ${release.title}\n` +
+                             `Label: ${release.labels[0]?.name} ${release.labels[0]?.catno}\n` +
+                             `Format: ${release.formats[0]?.name} ${release.formats[0]?.descriptions?.join(' ')}\n` +
+                             `Released: ${release.released_year || ''}\n` +
+                             `Country: ${release.country || ''}`;
+
+            const context = {
+                raw_text: raw_text,
+                label: `${release.labels[0]?.name} ${release.labels[0]?.catno}`,
+                generatedDescription: "",
+                discogsUrl: url
+            };
+
+            // Clear and then process
+            clearAllFields();
+            const processResp = await fetch('/api/walmart/process-item', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(context)
+            });
+            const processedData = await processResp.json();
+            
+            // Set URL for the second button if needed
+            document.getElementById('discogsUrl').value = url;
+            await loadFromBuilder();   // Load base fields from builder tab
+            applyExpertGenreMapping(release, true); // Still apply the smart genre map using the data we already have
+            scrapeBtn.innerText = "✅ Done!";
+        } catch (e) {
+            showToast(e.message, true);
+        } finally {
+            setTimeout(() => { scrapeBtn.innerText = originalText; scrapeBtn.disabled = false; }, 2000);
+        }
+    }
+
+    async function fetchDiscogsData() {
+        const url = document.getElementById('discogsUrl').value.trim();
+        if (!url) return showToast("Please enter a Discogs URL or ID.", true);
+        const btn = document.getElementById('fetchDiscogsBtn');
+        btn.textContent = "Loading...";
+        btn.disabled = true;
+        try {
+            const resp = await fetch('/api/scrape-json', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: url })
+            });
+            if (!resp.ok) throw new Error(`Server Error: ${resp.status}`);
+            const res = await resp.json();
+            if (res.status !== 'success') throw new Error(res.message || "Unknown API error.");
+
+            const discogs = res.data.release;
+            const listing = res.data.listing;
+
+            let artistStr = "";
+            if (discogs.artists && discogs.artists.length > 0) {
+                discogs.artists.forEach(a => {
+                    let name = a.anv || a.name || 'Unknown';
+                    name = name.replace(/\s*\(\d+\)$/, '').trim();
+                    let j = a.join ? a.join.trim() : "";
+                    if (j === ',') j = ', ';
+                    else if (j) j = ` ${j} `;
+                    artistStr += name + j;
+                });
+                artistStr = artistStr.trim();
+            }
+            const artist = artistStr || (discogs.artists_sort || "").replace(/\s*\(\d+\)$/, '').trim();
+            const title = discogs.title || "";
+            let mediaCount = 0, mediaTypeRaw = "", mediaDescArr = [];
+            if (discogs.formats) {
+                let dvdGroupSeen = false;
+                discogs.formats.forEach(f => {
+                    let fname = f.name || "";
+                    
+                    if (f.descriptions) {
+                        mediaDescArr = mediaDescArr.concat(f.descriptions);
+                    }
+                    if (f.text) {
+                        mediaDescArr = mediaDescArr.concat(f.text.split(/[/,;]/).map(t => t.trim()).filter(Boolean));
+                    }
+
+                    if (fname === "All Media" || fname === "Box Set") {
+                        // Skip adding physical count for these global wrappers
+                    } else if (fname.includes("DVD")) {
+                        if (!dvdGroupSeen) {
+                            dvdGroupSeen = true;
+                            mediaCount += parseInt(f.qty) || 1;
+                        }
+                    } else {
+                        mediaCount += parseInt(f.qty) || 1;
+                    }
+
+                    if (!mediaTypeRaw && fname !== "All Media") mediaTypeRaw = fname;
+                });
+            }
+            // Clean up description array (deduplicate, remove redundant entries)
+            mediaDescArr = [...new Set(mediaDescArr)].filter(item => {
+                let l = item.toLowerCase();
+                return l !== "out-of-print" && l !== "out of print" && l !== "dvd" && l !== "cd";
+            });
+            const mediaCountStr = mediaCount > 1 ? `${mediaCount}x` : "";
+
+            // Upgrade "DVD" to "DVD-Video" if the Discogs descriptions include it
+            const hasDvdVideo = discogs.formats?.some(f =>
+                f.descriptions && f.descriptions.some(d => d.toLowerCase() === 'dvd-video')
+            );
+            if (mediaTypeRaw === "DVD" && hasDvdVideo) mediaTypeRaw = "DVD-Video";
+
+            const displayMediaType = (mediaTypeRaw === "Vinyl" || mediaTypeRaw === "Vinyl Record") ? "LP Vinyl" : (mediaTypeRaw === "Cassette" ? "Cassette" : mediaTypeRaw);
+            
+            let generatedProductName = `${artist} - ${title} - Audio ${mediaCountStr}${displayMediaType}`;
+            generatedProductName = generatedProductName.replace(/\bCD\b/g, 'Audio CD').replace(/Audio Audio CD/gi, 'Audio CD');
+            populateFieldIfEmpty('productName', generatedProductName);
+            
+            if (listing && listing.price && listing.price.value) {
+                document.getElementById('sellingPrice').value = listing.price.value;
+            }
+            
+            if (listing) {
+                const skuVal = listing.location || listing.private_comments || "";
+                // Force-overwrite SKU from Discogs API only if non-blank
+                if (skuVal) document.getElementById('sku').value = skuVal;
+            }
+            
+            populateFieldIfEmpty('performer', artist);
+            populateFieldIfEmpty('title', title);
+
+            // Record Label: fall back to artist name if no label found
+            let labelName = (discogs.labels?.[0]?.name || "").replace(/\s*\(\d+\)$/, '').trim();
+            if (!labelName) labelName = artist;
+            populateFieldIfEmpty('recordLabel', labelName);
+            
+            // MPN (Cat#): fall back to UPC/GTIN if no cat# found
+            let cleanMpnDiscogs = (discogs.labels?.[0]?.catno || "").replace(/\//g, '').replace(/\s+/g, ' ').trim();
+            if (!cleanMpnDiscogs) {
+                // Use whatever is already in the productId field (barcode) as fallback
+                cleanMpnDiscogs = document.getElementById('productId').value.trim();
+            }
+            populateFieldIfEmpty('mpn', cleanMpnDiscogs);
+            
+            populateFieldIfEmpty('origRelDate', discogs.released || discogs.year || "");
+            let currentRel2 = document.getElementById('origRelDate').value;
+            if (!currentRel2) {
+                const fetchedD2 = await searchItunesForReleaseDate(artist, title);
+                if (fetchedD2) populateFieldIfEmpty('origRelDate', fetchedD2);
+            }
+            populateFieldIfEmpty('numDiscs', mediaCount || 1);
+            
+            // Country of Origin population
+            if (discogs.country) {
+                let countryToSet = discogs.country;
+                if (countryToSet.toLowerCase() === 'uk') countryToSet = 'United Kingdom';
+                if (countryToSet.toLowerCase() === 'us') countryToSet = 'United States';
+                // Use force=true because the field is pre-populated with 'United States' by default
+                setDropdownValueWithFallback('countryOfOrigin', countryToSet, 'United States', true);
+            }
+            
+            const barcode = discogs.identifiers?.find(id => id.type === 'Barcode')?.value.replace(/\D/g, '');
+            if (barcode && !document.getElementById('productId').value) {
+                document.getElementById('productId').value = barcode;
+                // Auto-set UPC vs GTIN based on digit length
+                document.getElementById('productIdType').value = barcode.length >= 13 ? 'GTIN' : 'UPC';
+            }
+
+            applyExpertGenreMapping(discogs, true);
+
+            if (listing && listing.condition) {
+                const condStr = listing.condition.toLowerCase();
+                const isNew = condStr.includes("mint (m)") && !condStr.includes("near");
+                setDropdownValueWithFallback('condition', isNew ? "New" : "Used", 'Used', false);
+            } else if (listing) {
+                setDropdownValueWithFallback('condition', "Used", 'Used', false);
+            }
+
+            const siteDescEl = document.getElementById('siteDescription');
+            if (listing && listing.comments && listing.comments.trim() !== '') {
+                // Build: "ProductName - cleaned_comments"
+                const productNameVal = document.getElementById('productName').value.trim();
+                let cleanedComments = listing.comments
+                    .replace(/\bis Out-of-Print\b/gi, '')
+                    .replace(/\bOut-of-Print\b/gi, '')
+                    .replace(/\s{2,}/g, ' ')
+                    .trim();
+                cleanedComments = cleanedComments.replace(/\bCD\b/g, 'Audio CD').replace(/Audio Audio CD/gi, 'Audio CD');
+                const fullDesc = productNameVal
+                    ? `${productNameVal} - ${cleanedComments}`
+                    : cleanedComments;
+                siteDescEl.value = fullDesc;
+            } else if (!siteDescEl.value) {
+                // Only fill if empty — Discogs had no comments
+                let generatedSiteDesc = `${document.getElementById('productName').value} - ${mediaDescArr.join(', ')} - ${document.getElementById('recordLabel').value} ${document.getElementById('mpn').value}`.replace(/\s\s+/g, ' ').trim();
+                generatedSiteDesc = generatedSiteDesc.replace(/\bCD\b/g, 'Audio CD').replace(/Audio Audio CD/gi, 'Audio CD');
+                siteDescEl.value = generatedSiteDesc;
+            }
+
+            showToast("✅ Discogs data supplemented!");
+        } catch (e) {
+            showToast(e.message, true);
+        } finally {
+            btn.textContent = "2. Load from Discogs";
+            btn.disabled = false;
+        }
+    }
+    
+    function updateDimensions() {
+        const type = document.getElementById('mediaType').value;
+        const dims = DIM_MAP[type];
+        if (dims) {
+            document.getElementById('measureDepth').value = dims.d;
+            document.getElementById('measureWidth').value = dims.w;
+            document.getElementById('measureWeight').value = dims.wt;
+            document.getElementById('measureHeight').value = dims.h;
+            document.getElementById('unitWeight').value = dims.wu;
+        }
+    }
+
+    function generateAndCopyRow() {
+        const btn = document.getElementById('generateRowBtn');
+        btn.disabled = true;
+
+        const headers = CSV_HEADER.split(',');
+        let rowData = new Array(headers.length).fill('');
+
+        const id_map = {
+            'sku': 0, 'productIdType': 2, 'productId': 3, 'productName': 4, 'sellingPrice': 5,
+            'shippingWeight': 6, 'countryOfOrigin': 7, 'inventoryQty': 9,
+            'siteDescription': 11, // site_desc Col L
+            'keyFeatures': 12, // Key Features (+) Col M
+            'keyFeatures1': 13, // Key Features 1 (+) Col N
+            'keyFeatures2': 14, // Key Features 2 (+) Col O 
+            'mainImageUrl': 15, // Main Image URL Col P
+            'prop65': 16, // Is Prop 65 Warning Required Col Q
+            'condition': 17, // Col R
+            'warranty': 18, // Has Written Warranty Col S
+            'collectible': 19, // Is Collectible Col T
+            'unit1': 20, // Unit (first) Col U
+            'measure1': 21, // Measure (first) Col V
+            'additionalImageUrl': 22, // Col W
+            'measureDepth': 23, // Measure (second) Col X
+            'unitDepth': 24, // Unit (second) Col Y
+            'measureWidth': 25, // Measure (third) Col Z
+            'unitWidth': 26, // Unit (third) Col AA
+            'measureWeight': 27, // Measure (fourth) Col AB
+            'unitWeight': 28, // Unit (fourth) Col AC
+            'measureHeight': 29, // Measure (fifth) Col AD
+            'unitHeight': 30, // Unit (fifth) Col AE
+            'parentalAdvisory': 48,
+            'mpn': 53, // Manufacturer Part Number
+            'mediaFormat': 54,
+            'musicGenre': 57,
+            'musicMediaFormat': 58,
+            'numDiscs': 64,
+            'origRelDate': 68,
+            'performer': 70,
+            'recordLabel': 71,
+            'title': 78,
+            'lagTime': 96,
+            'shipAlone': 98,
+            'siteStartDate': 101
+        };
+        
+        const static_values = { 1: 'Music', 8: '10001373153', 16: 'No', 17: 'New', 18: 'No', 19: 'Y', 20: 'Each', 21: '1', 24: 'in', 26: 'in', 30: 'in'};
+        static_values[28] = document.getElementById('unitWeight').value; // Get weight unit dynamically (index 28)
+
+        // Apply static values
+        for (const [index, value] of Object.entries(static_values)) {
+            rowData[parseInt(index)] = value;
+        }
+
+        // Apply mapped values from form
+        for (const [id, index] of Object.entries(id_map)) {
+             const el = document.getElementById(id);
+             if (el) rowData[index] = el.value.replace(/[\t\n\r]/g, ' ');
+        }
+
+        const tsv = rowData.join('\t');
+        document.getElementById('rowOutput').value = tsv;
+        navigator.clipboard.writeText(tsv).then(() => {
+            showToast('✅ Row generated and copied!');
+        }).catch(() => {
+            showToast('Could not copy to clipboard.', true);
+        }).finally(() => {
+            btn.disabled = false;
+        });
+    }
+
+    function openFeaturesModal() {
+        tempFeatures = [...(pulldownData.key_features || pulldownData['Key Features'] || [])];
+        renderFeaturesList();
+        document.getElementById('featuresModal').style.display = 'flex';
+    }
+
+    function closeFeaturesModal() {
+        document.getElementById('featuresModal').style.display = 'none';
+    }
+
+    let dragSrcIndex = null;
+
+    function renderFeaturesList() {
+        const container = document.getElementById('featuresListContainer');
+        container.innerHTML = '';
+        tempFeatures.forEach((feat, index) => {
+            const item = document.createElement('div');
+            item.dataset.index = index;
+            item.draggable = true;
+            item.style.cssText = 'display:flex;align-items:center;gap:6px;padding:3px 0;transition:opacity 0.15s;';
+
+            // Drag handle
+            const handle = document.createElement('span');
+            handle.textContent = '⠿';
+            handle.title = 'Drag to reorder';
+            handle.style.cssText = 'cursor:grab;font-size:1.1em;color:var(--text-light);user-select:none;padding:0 2px;';
+
+            // Drag events
+            item.addEventListener('dragstart', (e) => {
+                dragSrcIndex = index;
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => item.style.opacity = '0.4', 0);
+            });
+            item.addEventListener('dragend', () => { item.style.opacity = '1'; });
+            item.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+            item.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (dragSrcIndex === null || dragSrcIndex === index) return;
+                // Sync any typed edits before moving
+                container.querySelectorAll('input[type="text"]').forEach((inp, i) => { tempFeatures[i] = inp.value; });
+                const moved = tempFeatures.splice(dragSrcIndex, 1)[0];
+                tempFeatures.splice(index, 0, moved);
+                dragSrcIndex = null;
+                renderFeaturesList();
+            });
+
+            // Up button
+            const upBtn = document.createElement('button');
+            upBtn.textContent = '▲';
+            upBtn.title = 'Move up';
+            upBtn.style.cssText = 'width:auto;margin:0;padding:2px 6px;font-size:0.75em;background:var(--primary);';
+            upBtn.disabled = index === 0;
+            upBtn.onclick = () => {
+                container.querySelectorAll('input[type="text"]').forEach((inp, i) => { tempFeatures[i] = inp.value; });
+                if (index > 0) { [tempFeatures[index-1], tempFeatures[index]] = [tempFeatures[index], tempFeatures[index-1]]; }
+                renderFeaturesList();
+            };
+
+            // Down button
+            const downBtn = document.createElement('button');
+            downBtn.textContent = '▼';
+            downBtn.title = 'Move down';
+            downBtn.style.cssText = 'width:auto;margin:0;padding:2px 6px;font-size:0.75em;background:var(--primary);';
+            downBtn.disabled = index === tempFeatures.length - 1;
+            downBtn.onclick = () => {
+                container.querySelectorAll('input[type="text"]').forEach((inp, i) => { tempFeatures[i] = inp.value; });
+                if (index < tempFeatures.length - 1) { [tempFeatures[index+1], tempFeatures[index]] = [tempFeatures[index], tempFeatures[index+1]]; }
+                renderFeaturesList();
+            };
+
+            // Text input
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = feat;
+            input.style.cssText = 'flex:1;padding:6px;border:1px solid var(--border);border-radius:3px;background:var(--surface);color:var(--text-main);';
+            input.onchange = (e) => { tempFeatures[index] = e.target.value; };
+
+            // Delete button
+            const delBtn = document.createElement('button');
+            delBtn.textContent = '❌';
+            delBtn.title = 'Remove Feature';
+            delBtn.style.cssText = 'width:auto;margin:0;padding:4px 8px;background:var(--danger);';
+            delBtn.onclick = () => {
+                container.querySelectorAll('input[type="text"]').forEach((inp, i) => { tempFeatures[i] = inp.value; });
+                tempFeatures.splice(index, 1);
+                renderFeaturesList();
+            };
+
+            item.appendChild(handle);
+            item.appendChild(upBtn);
+            item.appendChild(downBtn);
+            item.appendChild(input);
+            item.appendChild(delBtn);
+            container.appendChild(item);
+        });
+    }
+
+    function addNewFeature() {
+        const input = document.getElementById('newFeatureInput');
+        const val = input.value.trim();
+        if (val) {
+            tempFeatures.push(val);
+            input.value = '';
+            renderFeaturesList();
+            const container = document.getElementById('featuresListContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+    }
+
+    async function saveFeatures() {
+        const btn = document.getElementById('saveFeaturesBtn');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        
+        tempFeatures = tempFeatures.filter(f => f.trim() !== '');
+        
+        try {
+            if (pulldownData.key_features) pulldownData.key_features = tempFeatures;
+            else if (pulldownData['Key Features']) pulldownData['Key Features'] = tempFeatures;
+            else pulldownData.key_features = tempFeatures;
+            
+            const resp = await fetch('/api/walmart/save-pulldowns', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pulldownData)
+            });
+            
+            if (!resp.ok) {
+                console.warn("Save endpoint failed. Features updated for current session only.");
+                showToast("Updated locally. Server save failed.", true);
+            } else {
+                showToast('✅ Key Features updated!');
+            }
+            
+            const kfList = document.getElementById('keyFeaturesList');
+            if (kfList) {
+                kfList.innerHTML = '';
+                tempFeatures.forEach(feat => {
+                    const opt = document.createElement('option');
+                    opt.value = feat;
+                    kfList.appendChild(opt);
+                });
+            }
+            
+            closeFeaturesModal();
+        } catch (e) {
+            showToast('Error saving features', true);
+            console.error(e);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Save Changes';
+        }
+    }
+
+    function clearAllFields() {
+        document.getElementById('mainForm').querySelectorAll('input[type="text"], textarea').forEach(input => { if (!input.readOnly) input.value = ''; });
+        document.getElementById('mainForm').querySelectorAll('select').forEach(select => select.selectedIndex = 0);
+        document.getElementById('sidebar').querySelectorAll('input[type="text"], textarea').forEach(input => input.value = '');
+        
+        document.getElementById('inventoryQty').value = '1';
+        document.getElementById('siteStartDate').value = '';
+        document.getElementById('shippingWeight').value = '1';
+        document.getElementById('parentalAdvisory').value = 'No';
+        document.getElementById('condition').value = '';
+        document.getElementById('lagTime').value = '1';
+        document.getElementById('shipAlone').value = 'No';
+        document.getElementById('music').value = 'Music';
+        document.getElementById('prop65').value = 'No';
+        document.getElementById('warranty').value = 'No';
+        document.getElementById('collectible').value = 'Y';
+        document.getElementById('fulfillmentId').value = '10001373153';
+        document.getElementById('mediaType').value = '';
+        updateDimensions();
+        // Use globally stored pulldownData for consistency, fallback if not loaded
+        populateSelect('countryOfOrigin', 
+                       pulldownData.country_of_origin || ['United States', 'Canada', 'Mexico', 'United Kingdom'], 
+                       'United States');
+    }
+
+    async function exitWalmartSheet() {
+        try {
+            await fetch('/api/walmart/cache-context', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}) 
+            });
+            localStorage.removeItem('wysiwyg_walmart_context');
+        } catch (e) {
+            console.error("Failed to clear cache on exit:", e);
+        }
+        window.close();
+    }
+</script>
+
+</body>
+</html>

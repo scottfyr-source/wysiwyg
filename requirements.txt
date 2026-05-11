@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+httpx
+psutil
+PySide6
+pyautogui
+pyperclip
+pywin32
+opencv-python
+numpy
+pyinstaller
+python-multipart
+pillow

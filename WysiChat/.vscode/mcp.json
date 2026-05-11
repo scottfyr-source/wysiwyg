@@ -1,0 +1,14 @@
+{
+  "servers": {
+    "continuity": {
+      "type": "stdio",
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": [
+        "c:\\Users\\FYR\\.vscode\\extensions\\hackerware.continuity-v3-4.2.0\\packages\\mcp-server\\dist\\index.js"
+      ],
+      "env": {
+        "WORKSPACE_ROOT": "c:\\Git\\Forever_Tools\\ChatUI"
+      }
+    }
+  }
+}

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WYSIWYG - Market Search</title>
+    <link rel="icon" type="image/png" href="/fyrlogo.png">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+    <h2>🔍 WYSIWYG - Inventory Look Up</h2>
+
+    <div class="search-container">
+        <div class="search-group">
+            <label>Artist</label>
+            <input type="text" placeholder="e.g. Pink Floyd">
+        </div>
+        <div class="search-group">
+            <label>Album Title</label>
+            <input type="text" placeholder="e.g. The Wall">
+        </div>
+        <div class="search-group">
+            <label>Barcode / UPC</label>
+            <input type="text" placeholder="Scan or Type here..." autofocus>
+        </div>
+        <div class="search-group">
+            <label>Catalog #</label>
+            <input type="text" placeholder="e.g. PC2 36183">
+        </div>
+        <div class="search-group">
+            <label>Format Filter</label>
+            <select>
+                <option>All Formats</option>
+                <option>Vinyl Only</option>
+                <option>CD Only</option>
+                <option>Cassette / Other</option>
+            </select>
+        </div>
+        <div class="search-group">
+            <label>Condition</label>
+            <select>
+                <option>Mint (M)</option>
+                <option>Near Mint (NM)</option>
+                <option>Very Good Plus (VG+)</option>
+                <option>Very Good (VG)</option>
+            </select>
+        </div>
+
+        <div class="button-row">
+            <button class="btn-search">SEARCH ALL PLATFORMS</button>
+            <button class="btn-reset">START OVER</button>
+        </div>
+    </div>
+
+    <div class="results-area">
+        <div class="master-release-card">
+            <div style="width: 100px; height: 100px; background: #333; border-radius: 4px;"></div>
+            <div>
+                <span style="background: var(--accent-color); color: black; padding: 2px 6px; font-size: 0.7rem; font-weight: bold; border-radius: 3px;">MASTER RELEASE</span>
+                <h3 style="margin: 5px 0;">Artist Name - Master Title (19XX)</h3>
+                <p style="color: var(--text-dim); font-size: 0.9rem;">Discogs Master ID: 12345 | Genre: Rock</p>
+            </div>
+        </div>
+
+        <table class="variation-list">
+            <thead>
+                <tr>
+                    <th>Version Info</th>
+                    <th>Label/Cat#</th>
+                    <th>Discogs Price (Med)</th>
+                    <th>Amazon Price</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><b>US 1982 First Pressing</b><br>Vinyl, LP, Album</td>
+                    <td>Columbia / PC 3333</td>
+                    <td>$45.00</td>
+                    <td>--</td>
+                    <td><button style="padding: 5px 10px; font-size: 0.7rem;">LIST</button></td>
+                </tr>
+                <tr>
+                    <td><b>2016 Remastered Reissue</b><br>Vinyl, LP, 180g</td>
+                    <td>Legacy / 88875</td>
+                    <td>$24.99</td>
+                    <td>$28.50</td>
+                    <td><button style="padding: 5px 10px; font-size: 0.7rem;">LIST</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="history-log">
+        <h4 style="margin-top:0;">Session History</h4>
+        <div class="log-tag">10:45 AM - Looked up UPC [0123456789] - Result Found (2 Versions)</div>
+        <div class="log-tag">10:42 AM - Looked up Artist [The Beatles] - Result Found (1 Master)</div>
+    </div>
+
+    <script>
+        // Apply theme on load
+        const savedTheme = localStorage.getItem('wysiwyg_theme');
+        if (savedTheme === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+        }
+    </script>
+</body>
+</html>

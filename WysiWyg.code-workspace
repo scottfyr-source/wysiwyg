@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "path": ".",
+    },
+  ],
+  "settings": {
+    "python.languageServer": "Default",
+    "python-envs.workspaceSearchPaths": [".venv"],
+    "python-envs.pythonProjects": [],
+    "python.terminal.useEnvFile": true,
+  },
+}

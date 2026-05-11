@@ -1,0 +1,29 @@
+{
+    "manifest_version": 3,
+    "name": "WYSIWYG Scraper",
+    "version": "1.0",
+    "description": "Right-click a Discogs link and send it to the WYSIWYG tool.",
+    "permissions": [
+        "contextMenus",
+        "tabs",
+        "scripting"
+    ],
+    "host_permissions": [
+        "http://127.0.0.1:8008/*",
+        "http://localhost:8008/*"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": ["http://127.0.0.1:8008/*", "http://localhost:8008/*"],
+            "js": ["content.js"]
+        }
+    ],
+    "icons": {
+        "16": "fyrlogo.png",
+        "48": "fyrlogo.png",
+        "128": "fyrlogo.png"
+    }
+}

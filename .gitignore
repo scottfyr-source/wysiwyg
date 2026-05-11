@@ -1,0 +1,60 @@
+# OS Generated Files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+
+# Continuity
+/.cursorrules
+SESSION_HANDOFF.md
+.continuity/
+/.venv # Already present
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+node_modules/
+
+# Local Configuration and Secrets
+.env
+.env.*
+allpass.json
+Conditions.json
+data.json
+version.json
+media_formats.json
+
+# Backups
+*.bak
+*- Copy*
+
+# IDE/Editor specific (VS Code is already in .vscode/mcp.json and settings.json, but general user settings can be ignored)
+.vscode/*.code-workspace
+.vscode/*.log
+.history/
+
+# Application-specific temporary/generated files
+Uberpaste/clipboard_history.json
+Uberpaste/settings.json
+WalmartSheet/__pycache__/
+WalmartSheet/pulldowns.json
+WYSIWYG.spec
+
+# WysiChat local data and history
+WysiChat/*.db
+WysiChat/machine_conf_*.json
+WysiChat/user_prefs_*.json
+
+# Logs and other runtime files
+*.log
+logs/
+
+# Build artifacts
+build/
+dist/

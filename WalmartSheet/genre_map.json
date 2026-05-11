@@ -1,0 +1,320 @@
+{
+    "Alternative": [
+        "Alternative Rock",
+        "Art Rock",
+        "Avant-garde",
+        "Darkwave",
+        "Dream Pop",
+        "Emo",
+        "Experimental",
+        "Goth Rock",
+        "Grunge",
+        "Indie Pop",
+        "Indie Rock",
+        "Industrial",
+        "Krautrock",
+        "Lo-Fi",
+        "Math Rock",
+        "NDW",
+        "New Wave",
+        "No Wave",
+        "Noise",
+        "Post-Punk",
+        "Power Electronics",
+        "Power Pop",
+        "Witch House"
+    ],
+    "Heavy Metal": [
+        "Black Metal",
+        "Death Metal",
+        "Doom Metal",
+        "Grindcore",
+        "Heavy Metal",
+        "Metalcore",
+        "Nu Metal",
+        "Technical Death Metal",
+        "Thrash",
+        "Viking Metal",
+        "Sludge Metal",
+        "Shoegaze",
+        "Screamo"
+    ],
+    "Punk Rock": [
+        "Anarcho-Punk",
+        "Hardcore",
+        "Melodic Hardcore",
+        "Oi",
+        "Pop Punk",
+        "Punk",
+        "Psychobilly"
+    ],
+    "Rock": [
+        "Acid Rock",
+        "Beat",
+        "Britpop",
+        "Garage Rock",
+        "Glam",
+        "Hard Rock",
+        "Post-Bop",
+        "Progressive Rock",
+        "Psychedelic Rock",
+        "Rock & Roll",
+        "Rockabilly",
+        "Soft Rock",
+        "Space Rock",
+        "Stoner Rock",
+        "Surf"
+    ],
+    "Dance Pop": [
+        "Alt-Pop",
+        "Bubblegum",
+        "Dance-pop",
+        "Eurodance",
+        "J-pop",
+        "K-pop",
+        "Pop",
+        "Synth-pop",
+        "Y\u00e9-Y\u00e9"
+    ],
+    "Electronica": [
+        "Abstract",
+        "Acid",
+        "Acid House",
+        "Ambient",
+        "Amapiano",
+        "Big Beat",
+        "Breakbeat",
+        "Dark Ambient",
+        "Deep House",
+        "Drone",
+        "EBM",
+        "Electro",
+        "Euro-Disco",
+        "Future Bass",
+        "Gabber",
+        "Glitch",
+        "Happy Hardcore",
+        "Hard House",
+        "Hardstyle",
+        "Hi NRG",
+        "Hyperpop",
+        "IDM",
+        "Italo-Disco",
+        "Leftfield",
+        "Minimal",
+        "Progressive House",
+        "Psy-Trance",
+        "Synthwave",
+        "Tech House",
+        "Techno",
+        "Trance",
+        "Tribal",
+        "UK Garage",
+        "Vaporwave"
+    ],
+    "Drum & Bass": [
+        "Drum n Bass",
+        "Jungle"
+    ],
+    "Bass": [
+        "Bass Music",
+        "Bounce",
+        "Dubstep",
+        "Miami Bass"
+    ],
+    "Downtempo": [
+        "Downtempo",
+        "Trip Hop"
+    ],
+    "Rap / Hip-Hop": [
+        "Baltimore Club",
+        "Drill",
+        "G-Funk",
+        "Grime",
+        "Hip Hop",
+        "Trap"
+    ],
+    "Jazz": [
+        "Contemporary Jazz",
+        "Free Jazz",
+        "Hard Bop",
+        "Instrumental",
+        "Ragtime",
+        "Smooth Jazz"
+    ],
+    "Acid Jazz": [
+        "Acid Jazz",
+        "Jazz-Funk"
+    ],
+    "Jazz Fusion": [
+        "Fusion",
+        "Jazz-Rock"
+    ],
+    "Bebop": [
+        "Bebop"
+    ],
+    "Big Band / Swing": [
+        "Big Band",
+        "Swing"
+    ],
+    "New Orleans Jazz": [
+        "Dixieland"
+    ],
+    "Blues / Blues Rock": [
+        "Blues Rock",
+        "Delta Blues"
+    ],
+    "R&B / Soul": [
+        "Funk",
+        "Modern Classical",
+        "Neo Soul",
+        "New Jack Swing",
+        "P.Funk",
+        "Rhythm & Blues",
+        "Soul",
+        "Soul-Jazz",
+        "UK Street Soul"
+    ],
+    "World / Reggae": [
+        "African",
+        "Afrobeat",
+        "Dancehall",
+        "Dub",
+        "Highlife",
+        "Lovers Rock",
+        "Ragga",
+        "Reggae",
+        "Rocksteady",
+        "Roots Reggae",
+        "Soca",
+        "Zouk"
+    ],
+    "Latin Pop": [
+        "MPB",
+        "Reggaeton",
+        "Bachata",
+        "Ax\u00e9",
+        "Afro-Cuban",
+        "Mambo",
+        "Guajira",
+        "Bossa Nova",
+        "Merengue",
+        "Bolero",
+        "Rumba",
+        "Samba",
+        "Salsa",
+        "Latin Pop",
+        "Tango"
+    ],
+    "Latin Jazz": [
+        "Latin Jazz"
+    ],
+    "Bluegrass": [
+        "Appalachian Music",
+        "Bluegrass"
+    ],
+    "Country": [
+        "Honky Tonk",
+        "Western Swing"
+    ],
+    "Cajun & Zydeco": [
+        "Zydeco"
+    ],
+    "Folk Music": [
+        "Aboriginal",
+        "Anatolian Rock",
+        "Celtic",
+        "Fado",
+        "Folk",
+        "Folk Rock",
+        "Klezmer",
+        "Rebetiko",
+        "Ra\u00ef",
+        "Schlager",
+        "Skiffle"
+    ],
+    "Traditional Folk": [
+        "Bhangra",
+        "Dangdut",
+        "Hindustani",
+        "Qawwali"
+    ],
+    "Classical": [
+        "Baroque",
+        "Medieval",
+        "Motet",
+        "Neo-Classical",
+        "Renaissance"
+    ],
+    "Opera / Vocal": [
+        "Ballad",
+        "Barbershop",
+        "Enka",
+        "Opera",
+        "Operetta",
+        "Vocal"
+    ],
+    "Soundtracks": [
+        "Bollywood",
+        "Score",
+        "Soundtrack",
+        "Video Game Music"
+    ],
+    "New Age": [
+        "AOR",
+        "Acoustic",
+        "Easy Listening",
+        "Lounge",
+        "New Age"
+    ],
+    "Children's Music": [
+        "Education",
+        "Nursery Rhymes"
+    ],
+    "Special Interest": [
+        "Field Recording",
+        "Interview",
+        "Monolog",
+        "Musique Concr\u00e8te",
+        "Public Service Announcement",
+        "Sea Shanties",
+        "Speech (Selected)",
+        "Spoken Word (Selected)"
+    ],
+    "Christian / Gospel": [
+        "Gospel",
+        "Sermon"
+    ],
+    "Banda": [
+        "Banda"
+    ],
+    "Adult Contemporary": [
+        "Pop Rock",
+        "Yacht Rock",
+        "Shibuya-Kei"
+    ],
+    "Ballets / Dances": [
+        "Brass Band",
+        "Marches",
+        "Polka"
+    ],
+    "Pacific": [
+        "Pacific"
+    ],
+    "Disco": [
+        "Disco"
+    ],
+    "Flamenco": [
+        "Flamenco"
+    ],
+    "House": [
+        "Garage House",
+        "House"
+    ],
+    "Karaoke": [
+        "Karaoke"
+    ],
+    "Ska": [
+        "Ska"
+    ]
+}

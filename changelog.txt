@@ -1,0 +1,146 @@
+
+### v1.4.7.2 - 2026-02-02
+-- Final release preparations: port reverted to 8008 and BETA identifiers removed from GUI.
+
+### v1.2.1 - 2026-01-19 11:43
+-- Fixed: 2X and 3X CD not showing properly
+-- Fixed issue with radio buttons not clearing after new scrape or reset all
+
+### v1.2.2 - 2026-01-19 12:21
+-- a few GUI enhancements to dark mode colors
+-- MEDIA CONDITION pull down always turn the MEDIA DESCRIPTION text box the same shade of red for ANY entries that do not include the word "FACTORY" i.e. factory sealed, factory new, etc.
+-- Generate HTML now triggers on current scraped data when selecting DETAILS tab
+
+### v1.2.4 - 2026-01-19 14:46
+-- added Used Like New (NM-) to the turn DESC text box red.
+
+### v1.2.4.1 - 2026-01-19 15:18
+-- added a 4th decimal place to the version to account for minor build changes like adding options to the data.json file.
+
+### v1.2.5.1 - 2026-01-19 15:42
+-- added NM- to the change the DESC box read on SLEEVES
+
+### v1.3.5.1 - 2026-01-19 17:28
+-- made a weight/speed category and moved all weight/speed to this new field and changed location for color as well.
+
+### v1.3.6.2 - 2026-01-20 11:24
+-- fixed weight not showing with speed
+-- fixed clearing of all previous scraped data when starting a new one
+-- removed "import" from "worldwide" distribution
+
+### v1.3.7.2 - 2026-01-20 15:01
+-- DVD/DVD-Video bug fix
+
+### v1.4.10.2 - 2026-02-20 09:46
+* fixed issue where Artwork / Insert is missing on DVD/Blue ray
+
+### v1.4.11.2 - 2026-02-20 09:50
+* added check for cassette and blue ray box set sku builds
+
+### v1.4.12.2 - 2026-02-20 10:19
+* added check for cassette and blue ray box set sku builds
+* changed multi media boxsets to be called MEDIABOX in the SKU
+* removed space between disk count and media type for multi media box sets
+* removed ALBUM from the desc of MEDIABOX sets
+* removed duplicate BOX SET from MEDIABOX sets
+
+### v1.4.14.2 - 2026-02-20 11:48
+* reordering FORMAT TAGS so they are listed in order of appearance in multiselect box
+
+### v1.4.15.2 - 2026-02-20 14:01
+* fixed single format multiple count items from missing the media format in the description
+
+### v1.5.15.2 - 2026-03-02 17:30
+* added UberPaste and WysiScan to the main GUI
+
+### v1.6.16.2 - 2026-03-18 12:14
+* resolved an issue where the original scanned image were being cropped
+* resolved an issue where the tilt correction was not auto applying
+* added clear auto generated cropping square in manual crop
+* added redo button to scanner
+
+### v1.7.18.2 - 2026-03-31 16:32
+* Added working WALMART screen
+* bug squishing on WALMART screen
+
+### v1.8.25.2 - 2026-04-14 16:33
+Builder Tab:
+
+1- https://www.discogs.com/sell/item/4108623660
+   -ANV name: John "Jubu" Smith - Jubu
+   -Display Name: Jubu
+---FIXED---
+
+2- URL: https://www.discogs.com/release/31834325-The-Hitman-Blues-Band-Hey-Can-You-Guys-Play?ev=
+   Results: 'Hitman Blues Band, The - Hey Can You Guys Play…'
+   Fix: Make sure 'The' is in the front
+---FIXED---
+
+3- URL: https://www.discogs.com/sell/item/4113078846
+   Results: 
+        "Used Like New Limited Edition Compilation 2000 USA Compilation, CD + NTSC DVD-Video Box Set is Out-of-Print with 14 Tracks - Volcano / Tool Dissectional 61422-31159-2 DVD"
+    - Compilation is duplicated, make sure words like that only occur once in the generated DESCRIPTION
+    - Number of Discs showing 3 when should only be TWO
+          - Discosg Format data "CD, DVD, DVD-Video, NTSC, Compilation, Box Set, Limited Edition, Misprint"
+          - DVD, DVD-Video are not two separate disks, so if it see's DVD and DVD-Video both then DVD-Video is only describing   
+                the DVD. 
+         - So in these cases DVD and DVD-Video (or DVD-AUDIO) are only one countable disk.
+   - Misprint is also missing from the  generated DESCRIPTION on the BUILDER TAB
+---FIXED---
+
+Walmart Tab:
+
+1- https://www.discogs.com/release/14566323-Gail-Jhonson-Pearls?ev=
+    -Gail Johnson - Pearls - CD - Used Like New 2008 USA CD with 12 Tracks - nuGroove Records NUG-2002-2
+    -Audio - CD
+---FIXED---
+
+2- Clear all fields not reloading new data from builder.
+    Empty fields.
+    Load from builder should over write data with fresh import from builder tab,
+        not cached data like it does from the first run of the form..
+--FIXED--
+
+3- DVD should always be DVD-Audio
+---FIXED---
+
+4- Manufacturer Part Number:
+    -ex: '/ / EV413027'
+    -fix: no '/''s
+    -corrected: EV413027
+---FIXED---
+
+5- Main Image URL & Additional Image URL (+) should auto paste
+---FIXED---
+
+6- If no 'part number' use the UPC/GTIN
+---FIXED---
+
+7- If no label name, use the artists name instead
+---FIXED---
+
+8- GTIN not populating right 13+ digits is GTIN
+---FIXED---
+
+9- Site Start Date starts moving to next day after 6pm. Make sure time zone is CST
+---FIXED---
+
+10- USE API option:  https://www.discogs.com/sell/item/4107960387
+     -SKU / Location
+---FIXED---
+
+11- Country is coming up as Christian Country, and POP is showing up as BRITISH POP
+---FIXED---
+
+12- Country of origin is not populating correctly
+---FIXED---
+
+### v1.8.26.2 - 2026-05-04 09:40
+* Fixed Discog's URL change from sell to shop
+
+### v1.9.27.2 - 2026-05-06 13:40
+* added multiselect menus for conditions
+* added edit ability on admin screen for conditions
+
+### v1.9.27.3 - 2026-05-06 16:16
+* consolidated condition menu items

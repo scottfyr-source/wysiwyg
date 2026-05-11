@@ -1,0 +1,13 @@
+Next Steps for Tomorrow
+* Generate a Key: Run Fernet.generate_key() in a separate shell once and paste that string into SECRET_KEY.
+* Mapping: Populate the contacts dictionary with the actual office IP addresses.
+* Permissions: Verify the SHARED_PATH is reachable.
+Would you like me to show you the specific logic for the "Search" popup to handle the decryption of those stored database records?
+
+-------------
+
+PySimpleGUI 5, SQLite, Fernet
+cryptography.fernet
+C:\Git\FreeSimpleGUI
+import FreeSimpleGUI as sg 
+pip install FreeSimpleGUI pypiwin32 winshell fernet

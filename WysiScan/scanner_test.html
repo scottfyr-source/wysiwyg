@@ -1,0 +1,2270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/WysiScan.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/WysiScan.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="/WysiScan.png">
+    <title>WysiScan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #0000FF;
+            --accent-color: #FFFF00;
+            --bg-body: #f0f0f0;
+            --bg-container: #ffffff;
+            --text-main: #333333;
+            --border-color: #cccccc;
+            --input-bg: #ffffff;
+            --btn-bg: #0000FF;
+            --btn-text: #FFFF00;
+        }
+
+        [data-theme="dark"] {
+            --bg-body: #121212;
+            --bg-container: #1e1e1e;
+            --text-main: #e0e0e0;
+            --border-color: #444444;
+            --input-bg: #2d2d2d;
+            /* Keep high contrast buttons in dark mode too */
+        }
+
+        body { font-family: sans-serif; padding: 20px; background: var(--bg-body); color: var(--text-main); transition: background 0.3s, color 0.3s; }
+        .container { max-width: 1200px; margin: 0 auto; background: var(--bg-container); padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        h1 {
+            background-color: var(--primary-color);
+            color: var(--accent-color);
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+            margin-top: 0;
+            border: 2px solid var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button { padding: 10px 20px; font-size: 16px; background: var(--btn-bg); color: var(--btn-text); border: 1px solid var(--accent-color); border-radius: 4px; cursor: pointer; margin-right: 10px; font-weight: bold; }
+        button:disabled { background: #ccc; color: #666; border-color: #999; cursor: not-allowed; }
+        input[type="text"], input[type="number"] { padding: 10px; font-size: 16px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px; width: calc(100% - 22px); background: var(--input-bg); color: var(--text-main); }
+        .controls { margin-bottom: 20px; }
+        .result-area { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 20px; }
+        img { max-width: 100%; border: 1px solid var(--border-color); }
+        .status { margin-top: 10px; font-weight: bold; }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        .input-group input {
+            flex-grow: 1;
+            margin-bottom: 0; /* Override */
+        }
+        #scan-gallery {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .gallery-item {
+            display: flex;
+            gap: 5px;
+            width: 250px;
+            border: 1px solid var(--border-color);
+            padding: 5px;
+        }
+        .gallery-item > div { flex: 1; text-align: center; }
+        .gallery-item h4 { margin: 0 0 5px 0; font-size: 12px; }
+        .image-controls {
+            margin-bottom: 5px;
+        }
+        .image-controls button {
+            font-size: 18px;
+            padding: 0 8px;
+            line-height: 1;
+            height: 28px;
+            margin-right: 5px;
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #ccc;
+        }
+        /* Cropper Modal Styles */
+        .crop-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+        }
+        .crop-modal-content {
+            background-color: var(--bg-container);
+            color: var(--text-main);
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 90vw;
+            max-height: 90vh;
+        }
+        #cropImage {
+            max-width: 100%;
+        }
+        .crop-container {
+            width: 100%;
+            height: 60vh;
+            background-color: #333;
+            overflow: hidden;
+        }
+        .crop-modal-buttons { margin-top: 15px; text-align: right; }
+        #import-queue {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            border-top: 2px solid var(--border-color);
+            padding-top: 10px;
+        }
+        .import-item {
+            width: 100px;
+            height: 100px;
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .import-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .import-item:hover:not(.processing) {
+            border-color: #007bff;
+        }
+        .import-item.processing {
+            border-color: #ffc107;
+            cursor: wait;
+        }
+        .import-item.processed {
+            border-color: #28a745;
+            opacity: 0.8;
+        }
+        .import-item.error {
+            border-color: #dc3545;
+        }
+        .import-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            pointer-events: none;
+        }
+        .import-overlay.loading {
+            background: rgba(0,0,0,0.55);
+            color: #fff;
+        }
+        .import-overlay.loading::before {
+            content: '';
+            display: block;
+            width: 22px;
+            height: 22px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: #ffc107;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin-bottom: 4px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .checkmark {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #28a745;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .image-loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            z-index: 100;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+        .spinner-main {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 10px;
+        }
+        .error-mark {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .ocr-modal {
+            display: none;
+            position: fixed;
+            z-index: 1001; /* Above crop modal */
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--bg-container);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 500px;
+        }
+        .ocr-modal.stay-on-top { z-index: 2000; }
+        .ocr-modal-content { padding: 15px; }
+        .ocr-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; cursor: grab; background: var(--bg-body); padding: 5px; border-radius: 4px; }
+        .ocr-modal-header .close-btn { font-size: 24px; background: none; border: none; cursor: pointer; padding: 0 5px; color: var(--text-main); }
+        .ocr-modal-footer { text-align: right; margin-top: 10px; }
+        #ocrResultText { width: calc(100% - 12px); height: 200px; font-family: monospace; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); }
+
+        #tilt-ui {
+            background: var(--bg-container);
+            padding: 15px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            min-width: 130px;
+            flex-shrink: 0;
+        }
+        #tilt-ui button { margin: 0; min-width: 45px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="position: relative;">
+            <h1>WysiScan</h1>
+            <button onclick="toggleTheme()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); padding: 5px 10px; font-size: 12px; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color);">🌓 Theme</button>
+            <button onclick="openHelpModal()" style="position: absolute; right: 90px; top: 50%; transform: translateY(-50%); padding: 5px 10px; font-size: 12px; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color);">❓ Help</button>
+        </div>
+        <p>Ensure your scanner is connected and drivers are installed.</p>
+
+        <div class="form-group">
+            <label for="scannerSelect">Scanner:</label>
+            <select id="scannerSelect" style="padding: 10px; font-size: 16px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); width: 100%;" onchange="updateScannerPreference()">
+                <option value="">(Detecting...)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="saveLocation">Save Location:</label>
+            <div class="input-group">
+                <input type="text" id="saveLocation" placeholder="Default: (app folder)/scans" onchange="fetchGroups()">
+                <button id="browseBtn" onclick="browseForFolder()">Browse...</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div style="margin-bottom: 10px;">
+                <label for="groupName">Group Name:</label>
+                <button onclick="clearGroupAndUI()" title="Clear group name and reset UI" style="padding: 4px 8px; font-size: 12px; background-color: #dc3545; color: white; min-width: auto; margin-right: 5px;">Clear</button>
+                <input type="text" id="groupName" list="groupList" placeholder="Type new name, or select existing" autocomplete="off">
+                <datalist id="groupList"></datalist>
+                <button id="newGroupBtn" onclick="startOrResumeGroup()">Start Group</button>
+                <button id="addToGroupBtn" onclick="addToGroup()" disabled>Scan</button>
+                <button id="importBtn" onclick="importImage()" disabled>Import</button>
+                <button id="revertCropBtn" onclick="recropLast(true)" title="Start over and crop from original image" style="margin-left: 5px;" disabled>Crop</button>
+                <span style="margin-left: 10px; border-left: 1px solid #ccc; padding-left: 10px;"></span>
+                <label style="margin-right: 5px;" for="cropPadding">Padding:</label>
+                <input type="number" id="cropPadding" value="5" style="width: 60px; margin-right: 5px;" title="Pixels to pad (can be negative)">
+                <button onclick="openPaddingModal()" title="Edit Padding Options" style="padding: 2px 6px; font-size: 12px; background-color: #6c757d; color: white; min-width: auto; margin-right: 10px;">⚙️</button>
+                <button id="recropBtn" onclick="recropLast(false)" title="Apply new padding to the active cropped image" disabled>Adjust Pad</button>
+                <label style="margin-right: 10px;">
+                    <input type="checkbox" id="autoDeleteOriginal"> Auto Delete Original
+                </label>
+                <button onclick="exitApp()" style="background-color: #dc3545; color: white; padding: 15px 30px; font-size: 20px; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; margin-left: 15px;">EXIT</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px; padding: 8px 12px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 4px; width: fit-content;">
+                <strong style="font-size: 14px;">Crop Mode:</strong>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio" name="mediaType" value="auto" checked onchange="handleCropModeChange()"> 🖼️ Auto</label>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio" name="mediaType" value="cd" onchange="handleCropModeChange()"> 💿 CD Matrix</label>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio" name="mediaType" value="tape" onchange="handleCropModeChange()"> 📼 Tape</label>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio" name="mediaType" value="lp" onchange="handleCropModeChange()"> 📀 LP</label>
+            </div>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <div class="main-layout" style="display: flex; gap: 20px; align-items: flex-start;">
+            <!-- Manual Tilt UI vertically aligned on the left -->
+            <div id="tilt-ui">
+                <div style="font-weight: bold; font-size: 13px; margin-bottom: 2px;">📐 Tilt Correction</div>
+                
+                <div style="display: flex; gap: 5px; justify-content: center; width: 100%;">
+                    <button onclick="adjustTilt(-5)" title="Tilt Left 5°" style="background: #000; color: #fff; border: 1px solid #333; padding: 4px 8px; cursor: pointer; border-radius: 4px; font-weight: bold;">&lt;&lt;</button>
+                    <button onclick="adjustTilt(-1)" title="Tilt Left 1°" style="background: #000; color: #fff; border: 1px solid #333; padding: 4px 8px; cursor: pointer; border-radius: 4px; font-weight: bold;">&lt;</button>
+                </div>
+
+                <input type="number" id="tiltAngle" value="0" step="0.1" style="width: 70px; text-align: center; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--input-bg); color: var(--text-main);" title="Manual degree input">
+
+                <div style="display: flex; gap: 5px; justify-content: center; width: 100%;">
+                    <button onclick="adjustTilt(5)" title="Tilt Right 5°" style="background: #000; color: #fff; border: 1px solid #333; padding: 4px 8px; cursor: pointer; border-radius: 4px; font-weight: bold;">&gt;&gt;</button>
+                    <button onclick="adjustTilt(1)" title="Tilt Right 1°" style="background: #000; color: #fff; border: 1px solid #333; padding: 4px 8px; cursor: pointer; border-radius: 4px; font-weight: bold;">&gt;</button>
+                </div>
+                
+                <div style="width: 100%; display: flex; gap: 5px;">
+                    <button onclick="applyTilt()" style="flex: 1; padding: 8px 4px; background: #000; color: #fff; border: 1px solid #333; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">Apply</button>
+                    <button onclick="document.getElementById('tiltAngle').value = 0" style="flex: 1; padding: 8px 4px; background: #333; color: #fff; border: 1px solid #444; border-radius: 4px; cursor: pointer; font-size: 12px;">Reset</button>
+                </div>
+                
+                <button onclick="autoDeskew()" style="width: 100%; padding: 10px; background: #222; color: #fff; border: 1px solid #333; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">✨ Auto-Align</button>
+            </div>
+
+            <div class="main-previews" style="flex: 2;">
+                <div class="result-area">
+                    <div>
+                        <h3>Last Scan (Original)</h3>
+                        <div class="image-controls">
+                            <button onclick="rotateImage(document.getElementById('originalImg'), 'left')" title="Rotate Left 90°">⟲</button>
+                            <button onclick="rotateImage(document.getElementById('originalImg'), 'right')" title="Rotate Right 90°">⟳</button>
+                            <button onclick="undoLastAction()" title="Undo Last Action (Ctrl+Z)">↩️</button>
+                            <button onclick="redoLastAction()" title="Redo Last Undo (Ctrl+Y)">↪️</button>
+                            <button onclick="openCropper(document.getElementById('originalImg'))" title="Manual Crop">✂️</button>
+                            <button onclick="openCropToReplace()" title="Crop Original to Replace Output">✂️➜</button>
+                        </div>
+                        <img id="originalImg" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2NjYyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiPjwvY2lyY2xlPjxwb2x5bGluZSBwb2ludHM9IjIxIDE1IDE2IDEwIDUgMjEiPjwvcG9seWxpbmU+PC9zdmc+" alt="Original Scan will appear here" data-path="">
+                    </div>
+                    <div>
+                        <h3>Last Scan (Cropped)</h3>
+                        <div class="image-controls">
+                            <button onclick="rotateImage(document.getElementById('croppedImg'), 'left')" title="Rotate Left 90°">⟲</button>
+                            <button onclick="rotateImage(document.getElementById('croppedImg'), 'right')" title="Rotate Right 90°">⟳</button>
+                            <button onclick="undoLastAction()" title="Undo Last Action (Ctrl+Z)">↩️</button>
+                            <button onclick="redoLastAction()" title="Redo Last Undo (Ctrl+Y)">↪️</button>
+                            <button onclick="openCropper(document.getElementById('croppedImg'))" title="Manual Crop (Overwrite)">✂️</button>
+                            <button onclick="openCropAsNew()" title="Crop From This Image as New">✂️+</button>
+                            <button onclick="resetCropToOriginal()" title="Reset to Full Original Scan" style="font-size: 12px; vertical-align: middle;">Full</button>
+                            <button type="button" onclick="openImageExternal(document.getElementById('croppedImg'))" title="Open in Default Application" style="font-size: 12px; vertical-align: middle;">Open Image</button>
+                        </div>
+                        <div id="croppedImgContainer" style="position: relative;">
+                            <img id="croppedImg" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2NjYyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiPjwvY2lyY2xlPjxwb2x5bGluZSBwb2ludHM9IjIxIDE1IDE2IDEwIDUgMjEiPjwvcG9seWybW5lPjwvc3ZnPg==" alt="Cropped version will appear here" data-path="">
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <button onclick="saveCurrentCropped()" style="background-color: #28a745; width: 100%;">Save This Image</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="import-queue-container" style="display: none;">
+                    <h3>Import Queue</h3>
+                    <div id="import-queue"></div>
+                </div>
+            </div>
+            <div class="sidebar" style="flex: 1; border-left: 1px solid var(--border-color); padding-left: 20px; height: 75vh; display: flex; flex-direction: column;">
+                <div style="padding-bottom: 10px; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; flex-shrink: 0;">
+                    <h3 style="margin-top: 0; margin-bottom: 10px;">Group Actions</h3>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <button onclick="handleFiles('save')" style="background-color: #28a745; padding: 4px 8px; font-size: 12px;">Save Marked</button>
+                        <button onclick="handleFiles('delete')" style="background-color: #dc3545; padding: 4px 8px; font-size: 12px;">Delete Marked</button>
+                        <button onclick="openSaveFolder()" style="background-color: #17a2b8; padding: 4px 8px; font-size: 12px;">Open Folder</button>
+                    </div>
+                </div>
+                <div id="scan-gallery" style="overflow-y: auto; flex: 1; margin-top: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; padding-bottom: 5px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <h2 style="margin: 0; padding: 0; border: none; background: none; color: var(--text-main); font-size: 1.5em;">Scan Group</h2>
+                            <button onclick="refreshGroupGallery()" title="Refresh Gallery" style="padding: 2px 6px; font-size: 14px; background-color: #6c757d; color: white; min-width: auto;">🔄</button>
+                        </div>
+                        <label style="font-size: 12px; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)"> Select All
+                        </label>
+                    </div>
+                    <!-- Scanned items will be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="ocrResultModal" class="ocr-modal">
+        <div class="ocr-modal-content">
+            <div class="ocr-modal-header">
+                <h3 style="margin: 0;">OCR Lookup Result</h3>
+                <label style="font-size: 12px; cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="ocrStayOnTop" onchange="toggleOcrStayOnTop(this.checked)"> Stay on Top
+                </label>
+                <button onclick="closeOcrModal()" class="close-btn" title="Close">&times;</button>
+            </div>
+            <textarea id="ocrResultText" readonly></textarea>
+            <div class="ocr-modal-footer">
+                <button onclick="copyOcrResult(this)">Copy Text</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="helpModal" class="ocr-modal">
+        <div class="ocr-modal-content">
+            <div class="ocr-modal-header">
+                <h3 style="margin: 0;">Help & Shortcuts</h3>
+                <button onclick="closeHelpModal()" class="close-btn" title="Close">&times;</button>
+            </div>
+            <div id="hotkey-help-content" style="max-height: 400px; overflow-y: auto;">
+                <h4>Keyboard Shortcuts <span id="hotkey-capture-status" style="font-size: 0.8em; color: #007bff; margin-left: 10px;"></span></h4>
+                <ul id="hotkey-list"></ul>
+                <h4>Tips</h4>
+                <ul>
+                    <li>"Auto-Align" and "Auto-Crop" are applied automatically on scan, and also when you <strong>click an image in the Import Queue</strong>.</li>
+                    <li>"Recrop Last" is useful if you changed padding or rotated the original.</li>
+                </ul>
+            </div>
+            <div class="ocr-modal-footer">
+                <button onclick="closeHelpModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="cropModal" class="crop-modal">
+        <div class="crop-modal-content">
+            <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;">Manual Crop</h3>
+                <div style="font-size: 12px; color: #666;">Use the mouse wheel to zoom in and out</div>
+                <div>
+                    <label style="margin-right: 10px; cursor: pointer; user-select: none;"><input type="checkbox" id="autoFocusCrop"> Auto-Focus</label>
+                    <button onclick="clearCropSelection()" style="padding: 5px 10px; font-size: 14px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;">Clear Selection</button>
+                    <button onclick="fitToScreen()" style="padding: 5px 10px; font-size: 14px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Reset View</button>
+                </div>
+            </div>
+            <div class="crop-container">
+                <img id="cropImage" src="">
+            </div>
+            <div class="crop-modal-buttons">
+                <button id="cancelCropBtn">Cancel</button>
+                <button id="saveCropBtn" style="background-color: #28a745;">Save Crop</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="paddingModal" class="ocr-modal">
+        <div class="ocr-modal-content">
+            <div class="ocr-modal-header">
+                <h3 style="margin: 0;">Edit Padding Options</h3>
+                <button onclick="closePaddingModal()" class="close-btn" title="Close">&times;</button>
+            </div>
+            <div style="margin-bottom: 10px; display: flex; gap: 5px;">
+                <input type="number" id="newPaddingVal" placeholder="New Value" style="flex: 1; margin-bottom: 0;">
+                <button onclick="addPaddingOption()" style="background-color: #28a745; margin-right: 0;">Add</button>
+            </div>
+            <div id="paddingListContainer" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); padding: 5px; background: var(--input-bg);"></div>
+            <div class="ocr-modal-footer">
+                <button onclick="closePaddingModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let scanCounter = 0;
+        let groupStarted = false;
+        let lastOriginalPath = '';
+        let lastCroppedPath = '';
+        let cropper = null;
+        let currentCropTarget = null;
+        let currentCropMode = 'overwrite';
+        let knownGroups = {};
+        let currentPaddingOptions = [];
+        let currentGroupName = '';
+        let isCapturingHotkey = false;
+        let paddingByMode = { 'auto': 5, 'cd': 5, 'tape': 5, 'lp': 5 };
+        let hotkeys = {};
+
+        function handleCropModeChange() {
+            const selectedMode = document.querySelector('input[name="mediaType"]:checked').value;
+            if (paddingByMode[selectedMode] !== undefined) {
+                document.getElementById('cropPadding').value = paddingByMode[selectedMode];
+            }
+        }
+
+        const defaultHotkeys = {
+            scan: { key: '.', code: 'Period', ctrl: false, alt: false, shift: false, description: 'Scan/Add to Group' },
+            recropLast: { key: '/', code: 'Slash', ctrl: false, alt: false, shift: false, description: 'Recrop Last Image' },
+            clearGroup: { key: 'Delete', code: 'Delete', ctrl: false, alt: false, shift: false, description: 'Clear Group / Reset' },
+            undo: { key: 'z', code: 'KeyZ', ctrl: true, alt: false, shift: false, description: 'Undo Last Action' },
+            redo: { key: 'y', code: 'KeyY', ctrl: true, alt: false, shift: false, description: 'Redo Last Action' },
+            autoAlign: { key: 'a', code: 'KeyA', ctrl: false, alt: false, shift: false, description: 'Auto-Align Image' },
+            tiltLeft: { key: 'ArrowLeft', code: 'ArrowLeft', ctrl: false, alt: false, shift: false, description: 'Adjust Tilt Left' },
+            tiltRight: { key: 'ArrowRight', code: 'ArrowRight', ctrl: false, alt: false, shift: false, description: 'Adjust Tilt Right' },
+            applyTilt: { key: 'Enter', code: 'Enter', ctrl: false, alt: false, shift: false, description: 'Apply Tilt' },
+            paddingUp: { key: 'ArrowUp', code: 'ArrowUp', ctrl: false, alt: false, shift: false, description: 'Increase Padding' },
+            paddingDown: { key: 'ArrowDown', code: 'ArrowDown', ctrl: false, alt: false, shift: false, description: 'Decrease Padding' }
+        };
+
+        function openHelpModal() { document.getElementById('helpModal').style.display = 'block'; }
+        function closeHelpModal() { document.getElementById('helpModal').style.display = 'none'; }
+
+        // Theme Logic
+        function toggleTheme() {
+            const body = document.body;
+            const isDark = body.getAttribute('data-theme') === 'dark';
+            if (isDark) {
+                body.removeAttribute('data-theme');
+                localStorage.setItem('wysiscan_theme', 'light');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                localStorage.setItem('wysiscan_theme', 'dark');
+            }
+        }
+
+        function toggleSelectAll(checked) {
+            document.querySelectorAll('#scan-gallery .file-checkbox').forEach(cb => {
+                cb.checked = checked;
+            });
+        }
+
+        function updateSelectAllState() {
+            const checkboxes = document.querySelectorAll('#scan-gallery .file-checkbox');
+            const selectAll = document.getElementById('selectAllCheckbox');
+            if (!selectAll) return;
+            
+            if (checkboxes.length === 0) {
+                selectAll.checked = false;
+                return;
+            }
+            
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            selectAll.checked = allChecked;
+        }
+
+        function getGroupName() {
+            const groupNameInput = document.getElementById('groupName');
+            let groupName = groupNameInput.value.trim().replace(/[^a-zA-Z0-9\-_]/g, ''); // Sanitize
+            if (!groupName) {
+                groupName = "ScanGroup";
+                groupNameInput.value = groupName;
+            }
+            return groupName;
+        }
+
+        async function triggerBackupCleanup() {
+            console.log("Triggering backup file cleanup...");
+            try {
+                // Fire and forget. We don't need to wait for the response.
+                fetch('/cleanup-backups', { method: 'POST' });
+            } catch (e) {
+                console.error("Failed to trigger backup cleanup:", e);
+            }
+        }
+
+        async function clearGroupAndUI() {
+            // Clear input
+            await triggerBackupCleanup();
+            currentGroupName = '';
+            document.getElementById('groupName').value = '';
+            document.getElementById('groupName').focus();
+
+            // Reset gallery
+            document.getElementById('scan-gallery').innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; padding-bottom: 5px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h2 style="margin: 0; padding: 0; border: none; background: none; color: var(--text-main); font-size: 1.5em;">Scan Group</h2>
+                        <button onclick="refreshGroupGallery()" title="Refresh Gallery" style="padding: 2px 6px; font-size: 14px; background-color: #6c757d; color: white; min-width: auto;">🔄</button>
+                    </div>
+                    <label style="font-size: 12px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)"> Select All
+                    </label>
+                </div>
+            `;
+
+            // Reset main previews
+            const placeholderSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2NjYyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiPjwvY2lyY2xlPjxwb2x5bGluZSBwb2ludHM9IjIxIDE1IDE2IDEwIDUgMjEiPjwvcG9seWxpbmU+PC9zdmc+";
+            const originalImg = document.getElementById('originalImg');
+            const croppedImg = document.getElementById('croppedImg');
+            originalImg.src = placeholderSvg;
+            originalImg.dataset.path = "";
+            croppedImg.src = placeholderSvg;
+            croppedImg.dataset.path = "";
+
+            // Reset state variables
+            scanCounter = 0;
+            groupStarted = false;
+            lastOriginalPath = '';
+            lastCroppedPath = '';
+
+            // Clear import queue
+            const queueContainer = document.getElementById('import-queue-container');
+            if (queueContainer) {
+                document.getElementById('import-queue').innerHTML = '';
+                queueContainer.style.display = 'none';
+            }
+
+            // Update UI state
+            document.getElementById('status').innerText = "Group cleared. Start a new group or resume an existing one.";
+            document.getElementById('addToGroupBtn').disabled = true;
+            document.getElementById('importBtn').disabled = true;
+            document.getElementById('recropBtn').disabled = true;
+            document.getElementById('revertCropBtn').disabled = true;
+        }
+
+        async function refreshGroupGallery() {
+            const groupName = document.getElementById('groupName').value.trim();
+            if (!groupName) {
+                alert("No group selected to refresh.");
+                return;
+            }
+            // This will clear and reload the gallery
+            await startOrResumeGroup();
+        }
+
+        function setButtonsDisabled(disabled) {
+            document.getElementById('newGroupBtn').disabled = disabled;
+            document.getElementById('addToGroupBtn').disabled = disabled;
+            document.getElementById('importBtn').disabled = disabled;
+            
+            if (disabled) {
+                document.getElementById('recropBtn').disabled = true;
+                document.getElementById('revertCropBtn').disabled = true;
+            } else {
+                updateCropButtonsState();
+            }
+        }
+
+        function updateCropButtonsState() {
+            document.getElementById('recropBtn').disabled = !lastCroppedPath;
+            document.getElementById('revertCropBtn').disabled = !lastOriginalPath;
+        }
+
+        async function fetchGroups() {
+            const saveLocation = document.getElementById('saveLocation').value.trim();
+            let url = '/get-groups';
+            if (saveLocation) {
+                url += `?path=${encodeURIComponent(saveLocation)}`;
+            }
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                knownGroups = data.groups || {};
+                
+                const dataList = document.getElementById('groupList');
+                dataList.innerHTML = '';
+
+                const newGroupOption = document.createElement('option');
+                newGroupOption.value = "New Group";
+                newGroupOption.label = "Type a new group name above";
+                dataList.appendChild(newGroupOption);
+
+                Object.keys(knownGroups).sort().forEach(group => {
+                    const option = document.createElement('option');
+                    option.value = group;
+                    option.label = `Next: ${knownGroups[group] + 1}`;
+                    dataList.appendChild(option);
+                });
+            } catch (e) {
+                console.error("Error fetching groups:", e);
+            }
+        }
+
+        async function startOrResumeGroup() {
+            const newGroupName = getGroupName();
+
+            if (currentGroupName && currentGroupName !== newGroupName) {
+                await triggerBackupCleanup();
+            }
+            currentGroupName = newGroupName;
+
+            const groupName = newGroupName;
+
+            // Reset UI first
+            groupStarted = true;
+            document.getElementById('scan-gallery').innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; padding-bottom: 5px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h2 style="margin: 0; padding: 0; border: none; background: none; color: var(--text-main); font-size: 1.5em;">Scan Group</h2>
+                        <button onclick="refreshGroupGallery()" title="Refresh Gallery" style="padding: 2px 6px; font-size: 14px; background-color: #6c757d; color: white; min-width: auto;">🔄</button>
+                    </div>
+                    <label style="font-size: 12px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)"> Select All
+                    </label>
+                </div>
+            `; // Reset gallery
+            updateCropButtonsState();
+            const placeholderSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2NjYyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiPjwvY2lyY2xlPjxwb2x5bGluZSBwb2ludHM9IjIxIDE1IDE2IDEwIDUgMjEiPjwvcG9seWxpbmU+PC9zdmc+";
+            document.getElementById('originalImg').src = placeholderSvg;
+            document.getElementById('croppedImg').src = placeholderSvg;
+            document.getElementById('addToGroupBtn').disabled = false;
+            document.getElementById('importBtn').disabled = false;
+            const queueContainer = document.getElementById('import-queue-container');
+            // Clear import queue images
+            if (queueContainer) {
+                queueContainer.style.display = 'none';
+                document.getElementById('import-queue').innerHTML = '';
+            }
+            const queue = document.getElementById('import-queue');
+            queue.innerHTML = '';
+            queueContainer.style.display = 'none';
+            
+            // Refresh groups to ensure we have latest state
+            await fetchGroups();
+
+            if (knownGroups[groupName] !== undefined) {
+                scanCounter = knownGroups[groupName];
+                const status = document.getElementById('status');
+                status.innerText = `Resuming group '${groupName}'. Next scan will be #${scanCounter + 1}. Loading existing images...`;
+
+                // Fetch and display existing images
+                const saveLocation = document.getElementById('saveLocation').value.trim();
+                let url = `/get-group-images?group_name=${encodeURIComponent(groupName)}`;
+                if (saveLocation) {
+                    url += `&path=${encodeURIComponent(saveLocation)}`;
+                }
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    if (data.images && data.images.length > 0) {
+                        data.images.forEach(image => {
+                            addToGallery(null, image.url, image.number, null, image.path);
+                        });
+                        status.innerText = `Resumed group '${groupName}'. ${data.images.length} images loaded. Next scan is #${scanCounter + 1}.`;
+                    } else {
+                        status.innerText = `Resuming group '${groupName}'. No existing images found. Next scan is #${scanCounter + 1}.`;
+                    }
+                } catch (e) {
+                    console.error("Error fetching group images:", e);
+                    status.innerText = `Error loading images for group '${groupName}'.`;
+                }
+            } else {
+                scanCounter = 0;
+                const status = document.getElementById('status');
+                status.innerText = `Starting new group '${groupName}'.`;
+            }
+        }
+
+        function addToGroup() {
+            if (!groupStarted) {
+                alert("Please start a 'New Group' before adding to it.");
+                return;
+            }
+            performScan();
+        }
+
+        async function performScan() {
+            const status = document.getElementById('status');
+            const groupName = getGroupName();
+            const saveLocation = document.getElementById('saveLocation').value.trim();
+            const autoDeleteOriginal = document.getElementById('autoDeleteOriginal').checked;
+            const cropPadding = document.getElementById('cropPadding').value;
+            const mediaType = document.querySelector('input[name="mediaType"]:checked').value;
+            const currentCounter = scanCounter;
+
+            setButtonsDisabled(true);
+            status.innerText = `Scanning item ${currentCounter} for group '${groupName}'... Check for Windows popup.`;
+
+            try {
+                const response = await fetch('/trigger-scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        group_name: groupName,
+                        scan_counter: currentCounter,
+                        save_location: saveLocation,
+                        auto_delete_original: autoDeleteOriginal,
+                        crop_padding: cropPadding,
+                        media_type: mediaType
+                    })
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    handleScanSuccess(data, currentCounter, status);
+                } else {
+                    status.innerText = "Error: " + data.message;
+                }
+            } catch (e) {
+                status.innerText = "Network Error: " + e;
+            } finally {
+                setButtonsDisabled(false);
+            }
+        }
+
+        async function importImage() {
+            if (!groupStarted) {
+                alert("Please start a 'New Group' before importing.");
+                return;
+            }
+            
+            const importBtn = document.getElementById('importBtn');
+            setButtonsDisabled(true);
+            importBtn.innerText = "Browsing...";
+
+            try {
+                const browseResponse = await fetch('/browse-file', { method: 'POST' });
+                const browseData = await browseResponse.json();
+                
+                if (browseData.status !== 'success' || !browseData.paths || browseData.paths.length === 0) {
+                    if (browseData.status !== 'cancelled') {
+                        alert("Error selecting file: " + (browseData.message || "No files selected."));
+                    }
+                    // If browsing is cancelled or fails, re-enable buttons and exit.
+                    setButtonsDisabled(false);
+                    document.getElementById('addToGroupBtn').disabled = !groupStarted;
+                    importBtn.innerText = "Import";
+                    return;
+                }
+                
+                const paths = browseData.paths;
+                const queueContainer = document.getElementById('import-queue-container');
+                const queue = document.getElementById('import-queue');
+                
+                queueContainer.style.display = 'block';
+                queue.innerHTML = '';
+                
+                paths.forEach(path => {
+                    const div = document.createElement('div');
+                    div.className = 'import-item';
+                    div.title = path;
+                    div.dataset.path = path;
+                    div.onclick = () => processImportedFile(path);
+                    
+                    const img = document.createElement('img');
+                    img.src = `/view-image?path=${encodeURIComponent(path)}`;
+                    
+                    div.appendChild(img);
+                    queue.appendChild(div);
+                });
+
+            } catch (e) {
+                alert("Error importing: " + e);
+            } finally {
+                setButtonsDisabled(false);
+                importBtn.innerText = "Import";
+            }
+        }
+
+        async function processImportedFile(sourcePath) {
+            const item = document.querySelector(`.import-item[data-path="${CSS.escape(sourcePath)}"]`);
+
+            // Prevent re-processing while already in progress
+            if (item && item.classList.contains('processing')) return;
+
+            const status = document.getElementById('status');
+            const groupName = getGroupName();
+            const saveLocation = document.getElementById('saveLocation').value.trim();
+            const autoDeleteOriginal = document.getElementById('autoDeleteOriginal').checked;
+            const cropPadding = document.getElementById('cropPadding').value;
+            const mediaType = document.querySelector('input[name="mediaType"]:checked').value;
+            const currentCounter = scanCounter;
+
+            // Show loading overlay on the clicked queue item
+            let overlay = null;
+            if (item) {
+                item.classList.add('processing');
+                item.classList.remove('processed', 'error');
+                // Remove old marks
+                item.querySelectorAll('.checkmark, .error-mark, .import-overlay').forEach(el => el.remove());
+                overlay = document.createElement('div');
+                overlay.className = 'import-overlay loading';
+                overlay.textContent = 'Aligning…';
+                item.appendChild(overlay);
+            }
+
+            setButtonsDisabled(true);
+            status.innerText = `Auto-aligning and cropping imported item ${currentCounter + 1}...`;
+
+            try {
+                const response = await fetch('/import-file', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        source_path: sourcePath,
+                        group_name: groupName,
+                        scan_counter: currentCounter,
+                        save_location: saveLocation,
+                        auto_delete_original: autoDeleteOriginal,
+                        crop_padding: cropPadding,
+                        media_type: mediaType
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    handleScanSuccess(data, currentCounter, status);
+
+                    if (item) {
+                        if (overlay) overlay.remove();
+                        item.classList.remove('processing');
+                        item.classList.add('processed');
+                        if (!item.querySelector('.checkmark')) {
+                            const check = document.createElement('div');
+                            check.className = 'checkmark';
+                            check.innerHTML = '✓';
+                            item.appendChild(check);
+                        }
+                    }
+                } else {
+                    status.innerText = "Error: " + data.message;
+                    if (item) {
+                        if (overlay) overlay.remove();
+                        item.classList.remove('processing');
+                        item.classList.add('error');
+                        if (!item.querySelector('.error-mark')) {
+                            const errMark = document.createElement('div');
+                            errMark.className = 'error-mark';
+                            errMark.innerHTML = '✕';
+                            item.appendChild(errMark);
+                        }
+                        item.title = `Failed: ${data.message}`;
+                    }
+                }
+            } catch (e) {
+                status.innerText = `Network error processing file: ${e}`;
+                if (item) {
+                    if (overlay) overlay.remove();
+                    item.classList.remove('processing');
+                    item.classList.add('error');
+                    if (!item.querySelector('.error-mark')) {
+                        const errMark = document.createElement('div');
+                        errMark.className = 'error-mark';
+                        errMark.innerHTML = '✕';
+                        item.appendChild(errMark);
+                    }
+                    item.title = `Failed: ${e}`;
+                }
+            } finally {
+                setButtonsDisabled(false);
+            }
+        }
+
+        function handleScanSuccess(data, currentCounter, status) {
+            const originalImg = document.getElementById('originalImg');
+            const croppedImg = document.getElementById('croppedImg');
+            // Update main display with the latest scan
+            if (data.original_deleted) {
+                originalImg.src = "";
+                originalImg.alt = "Original Deleted";
+                originalImg.dataset.path = "";
+            } else {
+                originalImg.src = data.original;
+                originalImg.alt = "Original Scan";
+                originalImg.dataset.path = data.original_path;
+            }
+            croppedImg.src = data.cropped;
+            croppedImg.dataset.path = data.cropped_path;
+            
+            // If original was deleted, we can't "Revert" to it, but we can still "Adjust Pad" the cropped one
+            lastOriginalPath = data.original_deleted ? "" : data.original_path;
+            lastCroppedPath = data.cropped_path;
+            
+            status.innerText = `Scan Complete!`;
+
+            // Add to gallery at the bottom and refresh groups
+            addToGallery(data.original, data.cropped, currentCounter, data.original_path, data.cropped_path);
+            scanCounter++;
+            fetchGroups(); // Refresh group list as a new group might have been created
+        }
+
+        async function browseForFolder() {
+            const browseBtn = document.getElementById('browseBtn');
+            const saveLocationInput = document.getElementById('saveLocation');
+            browseBtn.disabled = true;
+            browseBtn.innerText = "Browsing...";
+
+            const currentPath = saveLocationInput.value.trim();
+
+            try {
+                const response = await fetch('/browse-folder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: currentPath })
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    saveLocationInput.value = data.path;
+                    fetchGroups(); // Refresh groups for the new location
+                } else if (data.status !== 'cancelled') {
+                    alert('Error browsing for folder: ' + (data.message || 'Unknown error. The path might be invalid.'));
+                }
+            } catch (e) {
+                alert('Network error while browsing: ' + e);
+            } finally {
+                browseBtn.disabled = false;
+                browseBtn.innerText = "Browse...";
+            }
+        }
+
+        function loadIntoMainView(originalSrc, croppedSrc, originalPath, croppedPath) {
+            const originalImg = document.getElementById('originalImg');
+            const croppedImg = document.getElementById('croppedImg');
+            const placeholderSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2NjYyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiPjwvY2lyY2xlPjxwb2x5bGluZSBwb2ludHM9IjIxIDE1IDE2IDEwIDUgMjEiPjwvcG9seWxpbmU+PC9zdmc+";
+            
+            lastOriginalPath = originalPath || "";
+            if (originalPath) {
+                originalImg.src = originalSrc || placeholderSvg;
+                originalImg.dataset.path = lastOriginalPath;
+                originalImg.alt = originalSrc ? "Original Scan" : "Original Not Available";
+            } else {
+                originalImg.src = placeholderSvg;
+                originalImg.alt = "Original Not Provided";
+                originalImg.dataset.path = "";
+            }
+
+            lastCroppedPath = croppedPath || "";
+            croppedImg.src = croppedSrc;
+            croppedImg.dataset.path = lastCroppedPath;
+            
+            updateCropButtonsState();
+            
+            // Scroll to top to see the loaded image
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function addToGallery(originalSrc, croppedSrc, itemNumber, originalPath, croppedPath) {
+            const gallery = document.getElementById('scan-gallery');
+            const croppedImgId = `gallery-cropped-${itemNumber}`;
+
+            // Helper to extract filename
+            const getFilename = (path) => path ? path.replace(/^.*[\\\/]/, '') : '';
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'gallery-item';
+            
+            // Store paths for loading into main view
+            itemDiv.dataset.originalSrc = originalSrc || "";
+            itemDiv.dataset.croppedSrc = croppedSrc || "";
+            itemDiv.dataset.originalPath = originalPath || "";
+            itemDiv.dataset.croppedPath = croppedPath || "";
+            
+            const croppedName = getFilename(croppedPath);
+
+            itemDiv.innerHTML = `
+                <div style="width: 100%;">
+                    <h4>Cropped #${itemNumber} <input type="checkbox" class="file-checkbox" value="${croppedPath}" onchange="updateSelectAllState()"></h4>
+                    <div class="image-controls">
+                        <button onclick="rotateImage(document.getElementById('${croppedImgId}'), 'left')" title="Rotate Left 90°">⟲</button>
+                        <button onclick="rotateImage(document.getElementById('${croppedImgId}'), 'right')" title="Rotate Right 90°">⟳</button>
+                    </div>
+                    <img id="${croppedImgId}" src="${croppedSrc}" alt="Cropped Scan ${itemNumber}" data-path="${croppedPath}" style="cursor: pointer;" title="Click to edit in main view">
+                    <div style="font-size: 11px; color: #666; margin-top: 5px; word-break: break-all;">${croppedName}</div>
+                </div>
+            `;
+            
+            // Add click handler to load into main view
+            const img = itemDiv.querySelector('img');
+            img.onclick = () => loadIntoMainView(
+                itemDiv.dataset.originalSrc,
+                itemDiv.dataset.croppedSrc,
+                itemDiv.dataset.originalPath,
+                itemDiv.dataset.croppedPath
+            );
+
+            // Prepend to show newest at the top of the gallery
+            gallery.insertBefore(itemDiv, gallery.children[1]);
+        }
+
+        function openCropAsNew() {
+            const croppedImg = document.getElementById('croppedImg');
+            if (!croppedImg.src || !croppedImg.dataset.path) {
+                alert("No cropped image available to create a new image from.");
+                return;
+            }
+            openCropper(croppedImg, 'new');
+        }
+
+        function openCropToReplace() {
+            const originalImg = document.getElementById('originalImg');
+            if (!originalImg.src || !originalImg.dataset.path) {
+                alert("No original image available to crop from.");
+                return;
+            }
+            openCropper(originalImg, 'replace');
+        }
+
+        async function openCropper(imgElement, mode = 'overwrite') {
+            if (!imgElement.src || !imgElement.dataset.path) {
+                alert("Please scan an image first.");
+                return;
+            }
+            currentCropTarget = imgElement;
+            currentCropMode = mode;
+            const modal = document.getElementById('cropModal');
+            const image = document.getElementById('cropImage');
+            const imagePath = imgElement.dataset.path;
+
+            modal.style.display = 'flex';
+            image.src = ""; // Clear previous image to show it's loading
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+
+            // Set image source. The `onload` event will handle the rest.
+            image.src = `${imgElement.src.split('&v=')[0].split('&t=')[0]}&v=${new Date().getTime()}`;
+
+            image.onload = async () => {
+                let cropData = null;
+                // Only run detection on the original image to get the main subject.
+                // Cropping an already cropped image should start with the full view of that crop.
+                if (imgElement.id === 'originalImg') {
+                    try {
+                        const response = await fetch('/detect-bounds', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ path: imagePath })
+                        });
+                        const data = await response.json();
+                        if (data.status === 'success' && data.crop_data) {
+                            cropData = data.crop_data;
+                        }
+                    } catch (e) {
+                        console.error("Bounds detection failed:", e);
+                    }
+                }
+
+                cropper = new Cropper(image, {
+                    viewMode: 1,
+                    background: false,
+                    autoCropArea: cropData ? 1 : 0.8, // If we have data, don't auto-crop with an 80% box
+                    data: cropData, // This sets the initial crop box
+                    zoomOnWheel: true,
+                    ready: function() {
+                        if (cropData) {
+                            // If we auto-detected bounds, zoom to them.
+                            autoFocusSelection();
+                        } else if (document.getElementById('autoFocusCrop').checked) {
+                            // Otherwise, respect the user's auto-focus preference for manual selections.
+                            autoFocusSelection();
+                        }
+                    },
+                    cropend: function() {
+                        if (document.getElementById('autoFocusCrop').checked) {
+                            autoFocusSelection();
+                        }
+                    }
+                });
+            };
+        }
+
+        function fitToScreen() {
+            if (cropper) cropper.reset();
+        }
+
+        function clearCropSelection() {
+            if (cropper) cropper.clear();
+        }
+
+        function autoFocusSelection() {
+            if (!cropper) return;
+            const cropData = cropper.getData();
+            const containerData = cropper.getContainerData();
+            const canvasData = cropper.getCanvasData();
+
+            if (cropData.width === 0 || cropData.height === 0) return;
+
+            const padding = 50;
+            const availableW = containerData.width - padding * 2;
+            const availableH = containerData.height - padding * 2;
+
+            let targetScale = Math.min(
+                availableW / cropData.width,
+                availableH / cropData.height
+            );
+            
+            const cropCenterX = cropData.x + cropData.width / 2;
+            const cropCenterY = cropData.y + cropData.height / 2;
+            const containerCenterX = containerData.width / 2;
+            const containerCenterY = containerData.height / 2;
+
+            const newLeft = containerCenterX - (cropCenterX * targetScale);
+            const newTop = containerCenterY - (cropCenterY * targetScale);
+
+            cropper.setCanvasData({
+                left: newLeft,
+                top: newTop,
+                width: canvasData.naturalWidth * targetScale,
+                height: canvasData.naturalHeight * targetScale
+            });
+        }
+
+        function closeCropper() {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            document.getElementById('cropModal').style.display = 'none';
+            currentCropTarget = null;
+        }
+
+        async function saveCrop() {
+            if (!cropper || !currentCropTarget) return;
+
+            const saveBtn = document.getElementById('saveCropBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerText = 'Saving...';
+
+            try {
+                if (currentCropMode === 'new') {
+                    await saveCropAsNew();
+                } else if (currentCropMode === 'replace') {
+                    await saveCropToReplace();
+                } else {
+                    await saveOverwriteCrop();
+                }
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = 'Save Crop';
+            }
+        }
+
+        async function saveOverwriteCrop() {
+            const cropData = cropper.getData();
+            const path = currentCropTarget.dataset.path;
+
+            try {
+                const response = await fetch('/manual-crop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path, crop_data: cropData })
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    // Refresh all images with this path (Main preview + Gallery)
+                    const timestamp = new Date().getTime();
+                    const path = currentCropTarget.dataset.path;
+                    const allImages = document.querySelectorAll('img');
+                    allImages.forEach(img => {
+                        if (img.dataset.path === path) {
+                            img.src = `${img.src.split('&t=')[0]}&t=${timestamp}`;
+                        }
+                    });
+                    closeCropper();
+                } else { alert("Error cropping image: " + data.message); }
+            } catch (e) { alert("Network error while cropping: " + e); }
+        }
+
+        async function saveCropToReplace() {
+            const cropData = cropper.getData();
+            const sourcePath = currentCropTarget.dataset.path; // Original Image
+            const targetPath = lastCroppedPath; // The current cropped image path
+
+            if (!targetPath) {
+                alert("No cropped image exists to replace.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/manual-crop-replace', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source_path: sourcePath, target_path: targetPath, crop_data: cropData })
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    const timestamp = new Date().getTime();
+                    document.querySelectorAll('img').forEach(img => {
+                        if (img.dataset.path === targetPath) {
+                            img.src = `${img.src.split('&t=')[0]}&t=${timestamp}`;
+                        }
+                    });
+                    closeCropper();
+                } else { alert("Error replacing crop: " + data.message); }
+            } catch (e) { alert("Network error while cropping: " + e); }
+        }
+
+        async function saveCropAsNew() {
+            const cropData = cropper.getData();
+            const sourcePath = currentCropTarget.dataset.path;
+            const groupName = getGroupName();
+            const saveLocation = document.getElementById('saveLocation').value.trim();
+            const newCounter = scanCounter;
+
+            try {
+                const response = await fetch('/manual-crop-as-new', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: sourcePath,
+                        crop_data: cropData,
+                        group_name: groupName,
+                        scan_counter: newCounter,
+                        save_location: saveLocation
+                    })
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    addToGallery(null, data.cropped_url, `c${newCounter}`, null, data.cropped_path);
+                    scanCounter++;
+                    closeCropper();
+                } else { alert("Error creating new crop: " + data.message); }
+            } catch (e) { alert("Network error while cropping: " + e); }
+        }
+
+        async function resetCropToOriginal() {
+            const originalImg = document.getElementById('originalImg');
+            const croppedImg = document.getElementById('croppedImg');
+            
+            const originalPath = originalImg.dataset.path;
+            const croppedPath = croppedImg.dataset.path;
+
+            if (!originalPath) {
+                alert("Original image not available (it may have been deleted).");
+                return;
+            }
+            if (!croppedPath) {
+                alert("No cropped image to reset.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/revert-crop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        original_path: originalPath,
+                        cropped_path: croppedPath
+                    })
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    const timestamp = new Date().getTime();
+                    // Update main view
+                    croppedImg.src = `${croppedImg.src.split('&t=')[0]}&t=${timestamp}`;
+                    
+                    // Update gallery
+                    document.querySelectorAll('img').forEach(img => {
+                        if (img.dataset.path === croppedPath) {
+                            img.src = `${img.src.split('&t=')[0]}&t=${timestamp}`;
+                        }
+                    });
+                } else {
+                    alert("Error reverting crop: " + data.message);
+                }
+            } catch (e) {
+                alert("Network error: " + e);
+            }
+        }
+
+        async function recropLast(useOriginal = false) {
+            // Prioritize the original scan as the source to ensure high quality 
+            // and prevent "same file" errors where the source and target paths are identical.
+            const sourcePath = lastOriginalPath || lastCroppedPath;
+
+            if (!sourcePath) {
+                alert(useOriginal ? "Original image not available." : "No image available to recrop.");
+                return;
+            }
+
+            // If the original is missing, we cannot perform a 'same-file' operation on this backend.
+            if (sourcePath === lastCroppedPath) {
+                alert("Cannot adjust padding: The original scan is missing or was deleted. This feature requires the original image.");
+                return;
+            }
+
+            const recropBtn = document.getElementById('recropBtn');
+            const revertCropBtn = document.getElementById('revertCropBtn');
+            recropBtn.disabled = true;
+            revertCropBtn.disabled = true;
+            
+            recropBtn.innerText = "Processing...";
+            revertCropBtn.innerText = "Processing...";
+            
+            const container = document.getElementById('croppedImgContainer');
+            let overlay = null;
+            if (container) {
+                overlay = document.createElement('div');
+                overlay.className = 'image-loading-overlay';
+                overlay.innerHTML = '<div class="spinner-main"></div><div>Processing...</div>';
+                container.appendChild(overlay);
+            }
+
+            const padding = document.getElementById('cropPadding').value;
+            const mediaType = document.querySelector('input[name="mediaType"]:checked').value;
+
+            try {
+                const response = await fetch('/recrop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        original_path: sourcePath,
+                        cropped_path: lastCroppedPath,
+                        padding: padding,
+                        media_type: mediaType
+                    })
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    const timestamp = new Date().getTime();
+                    document.querySelectorAll('img').forEach(img => {
+                        if (img.dataset.path === lastCroppedPath) {
+                            img.src = `${img.src.split('&t=')[0]}&t=${timestamp}`;
+                        }
+                    });
+                } else { alert("Error recropping: " + data.message); }
+            } catch (e) {
+                console.error("Recrop error:", e);
+                alert("Network error: " + e.message);
+            } finally { 
+                if (overlay) overlay.remove();
+                setButtonsDisabled(false);
+                recropBtn.innerText = "Adjust Pad"; 
+                revertCropBtn.innerText = "Crop";
+            }
+        }
+
+        async function rotateImage(imgElement, direction) {
+            const path = imgElement.dataset.path;
+            if (!path) {
+                alert("Image path not found. Cannot rotate.");
+                return;
+            }
+
+            // Determine if we are in the main view or gallery
+            const isMainView = (imgElement.id === 'originalImg' || imgElement.id === 'croppedImg');
+            let pathsToRotate = [path];
+
+            // If in main view, rotate both Original and Cropped to keep them in sync
+            if (isMainView) {
+                pathsToRotate = [];
+                if (lastOriginalPath) pathsToRotate.push(lastOriginalPath);
+                if (lastCroppedPath && lastCroppedPath !== lastOriginalPath) pathsToRotate.push(lastCroppedPath);
+                // Deduplicate
+                pathsToRotate = [...new Set(pathsToRotate)];
+            }
+
+            const parentControls = imgElement.closest('div');
+            const buttons = parentControls.querySelectorAll('.image-controls button');
+            buttons.forEach(b => b.disabled = true);
+
+            for (const p of pathsToRotate) {
+                try {
+                    const response = await fetch('/rotate-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: p, direction })
+                    });
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        // Update all images on the page that share this path
+                        document.querySelectorAll(`img[data-path="${CSS.escape(p)}"]`).forEach(img => {
+                            img.src = data.new_url;
+                        });
+                    } else {
+                        console.error("Error rotating image: " + data.message);
+                    }
+                } catch (e) {
+                    alert("Network error while rotating image: " + e);
+                }
+            }
+            buttons.forEach(b => b.disabled = false);
+        }
+
+        async function handleFiles(action) {
+            const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+            const files = Array.from(checkboxes).map(cb => cb.value);
+            const saveLocation = document.getElementById('saveLocation').value.trim();
+
+            if (files.length === 0) {
+                alert("No files selected.");
+                return;
+            }
+
+            if (action === 'save' && !confirm(`Are you sure you want to ${action} ${files.length} files?`)) return;
+
+            try {
+                const response = await fetch('/manage-files', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, files, save_location: saveLocation })
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    if (action === 'save') {
+                        alert(`Successfully processed ${data.processed} files.`);
+                    }
+                    // Update UI to reflect changes
+                    if (action === 'delete') {
+                        checkboxes.forEach(cb => {
+                            const container = cb.closest('div'); // The div inside gallery-item
+                            const galleryItem = container.closest('.gallery-item');
+                            
+                            // Remove the specific image container
+                            container.remove();
+                            
+                            // If gallery item is empty, remove it entirely
+                            if (galleryItem.children.length === 0) {
+                                galleryItem.remove();
+                            }
+                        });
+                        // Clear main previews if they match deleted files
+                        const originalImg = document.getElementById('originalImg');
+                        const croppedImg = document.getElementById('croppedImg');
+                        files.forEach(deletedPath => {
+                            if (originalImg.dataset.path === deletedPath) {
+                                originalImg.src = "";
+                                originalImg.alt = "Deleted";
+                                originalImg.dataset.path = "";
+                            }
+                            if (croppedImg.dataset.path === deletedPath) {
+                                croppedImg.src = "";
+                                croppedImg.alt = "Deleted";
+                                croppedImg.dataset.path = "";
+                            }
+                        });
+                        updateSelectAllState();
+                    } else {
+                        // Save action
+                        checkboxes.forEach(cb => {
+                            const parent = cb.parentElement;
+                            cb.remove(); // Remove checkbox
+                            const statusSpan = document.createElement('span');
+                            statusSpan.innerText = ` (Saved)`;
+                            statusSpan.style.color = 'green';
+                            parent.appendChild(statusSpan);
+                        });
+                        updateSelectAllState();
+                    }
+                } else {
+                    alert("Error: " + data.message);
+                }
+            } catch (e) {
+                alert("Network Error: " + e);
+            }
+        }
+
+        async function saveCurrentCropped() {
+            const img = document.getElementById('croppedImg');
+            if (!img || !img.dataset.path) {
+                alert("No cropped image to save.");
+                return;
+            }
+            const path = img.dataset.path;
+            const saveLocation = document.getElementById('saveLocation').value.trim();
+
+            try {
+                const response = await fetch('/manage-files', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'save', files: [path], save_location: saveLocation })
+                });
+                const data = await response.json();
+                if (data.status === 'success') alert("Saved!");
+                else alert("Error: " + data.message);
+            } catch (e) { alert("Network Error: " + e); }
+        }
+
+        async function openSaveFolder() {
+            const saveLocation = document.getElementById('saveLocation').value.trim();
+            try {
+                const response = await fetch('/open-folder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: saveLocation })
+                });
+                const data = await response.json();
+                if (data.status !== 'success') {
+                    alert("Could not open folder: " + data.message);
+                }
+            } catch (e) {
+                alert("Network Error: " + e);
+            }
+        }
+
+        async function openImageExternal(imgElement) {
+            const path = imgElement.dataset.path;
+            if (!path) {
+                alert("No image available to open.");
+                return;
+            }
+            try {
+                const response = await fetch('/open-file', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: path })
+                });
+                const data = await response.json();
+                if (data.status !== 'success') {
+                    alert("Could not open image: " + data.message);
+                }
+            } catch (e) {
+                alert("Network Error: " + e);
+            }
+        }
+
+        function exitApp() {
+            fetch('/exit', { method: 'POST' });
+            document.body.innerHTML = "<h1>Server shutting down... You can close this tab.</h1>";
+        }
+
+        async function undoLastAction() {
+            const pathsToUndo = [];
+            // We primarily care about the cropped image, but if an original was also modified
+            // in the same "action group" (like a rotation), we should try to undo it too.
+            // The server logic is simple: if a .bak exists, it restores it.
+            if (lastCroppedPath) pathsToUndo.push(lastCroppedPath);
+            if (lastOriginalPath) pathsToUndo.push(lastOriginalPath);
+
+            const uniquePaths = [...new Set(pathsToUndo)];
+
+            if (uniquePaths.length === 0) {
+                alert("No last action to undo.");
+                return;
+            }
+
+            const status = document.getElementById('status');
+            status.innerText = 'Undoing last action...';
+            let success = false;
+
+            for (const path of uniquePaths) {
+                try {
+                    const response = await fetch('/undo-action', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: path })
+                    });
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        success = true;
+                        document.querySelectorAll(`img[data-path="${CSS.escape(path)}"]`).forEach(img => {
+                            img.src = data.new_url;
+                        });
+                    } else if (data.message !== 'No undo history found for this file.') {
+                       alert(`Undo failed for ${path.split(/[\\/]/).pop()}: ${data.message}`);
+                    }
+                } catch (e) { alert(`A network error occurred during undo: ${e}`); }
+            }
+            status.innerText = success ? 'Last action undone.' : 'Undo failed: No undo history found.';
+        }
+
+        async function redoLastAction() {
+            const pathsToRedo = [];
+            if (lastCroppedPath) pathsToRedo.push(lastCroppedPath);
+            if (lastOriginalPath) pathsToRedo.push(lastOriginalPath);
+
+            const uniquePaths = [...new Set(pathsToRedo)];
+            if (uniquePaths.length === 0) {
+                alert("No image active to redo.");
+                return;
+            }
+
+            const status = document.getElementById('status');
+            status.innerText = 'Redoing last action...';
+            let success = false;
+
+            for (const path of uniquePaths) {
+                try {
+                    const response = await fetch('/redo-action', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: path })
+                    });
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        success = true;
+                        document.querySelectorAll(`img[data-path="${CSS.escape(path)}"]`).forEach(img => {
+                            img.src = data.new_url;
+                        });
+                    }
+                } catch (e) { console.error("Redo network error:", e); }
+            }
+            status.innerText = success ? 'Redo successful.' : 'Redo failed: No redo history available.';
+        }
+
+        // --- Padding Options Logic ---
+        function openPaddingModal() {
+            document.getElementById('paddingModal').style.display = 'block';
+            renderPaddingList();
+            document.getElementById('newPaddingVal').focus();
+        }
+
+        function closePaddingModal() {
+            document.getElementById('paddingModal').style.display = 'none';
+        }
+
+        function selectPaddingOption(val) {
+            const paddingInput = document.getElementById('cropPadding');
+            paddingInput.value = val;
+            paddingInput.dispatchEvent(new Event('change'));
+            // Auto-apply when selecting from the padding modal (popup menu)
+            if (lastCroppedPath && lastOriginalPath) {
+                recropLast(false);
+            }
+            closePaddingModal();
+        }
+
+        function renderPaddingList() {
+            // Sort options numerically
+            currentPaddingOptions.sort((a, b) => a - b);
+
+            const container = document.getElementById('paddingListContainer');
+            container.innerHTML = '';
+            currentPaddingOptions.forEach(val => {
+                const div = document.createElement('div');
+                div.style.display = 'flex';
+                div.style.justifyContent = 'space-between';
+                div.style.alignItems = 'center';
+                div.style.padding = '5px';
+                div.style.borderBottom = '1px solid var(--border-color)';
+                div.innerHTML = `
+                    <span style="flex: 1; cursor: pointer;" onclick="selectPaddingOption(${val})" title="Click to select">${val} px</span>
+                    <button onclick="selectPaddingOption(${val})" style="background: #007bff; padding: 2px 6px; font-size: 12px; margin-right: 5px;">Select</button>
+                    <button onclick="removePaddingOption(${val})" style="background: #dc3545; padding: 2px 6px; font-size: 12px; margin: 0;">X</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function addPaddingOption() {
+            const input = document.getElementById('newPaddingVal');
+            const val = parseInt(input.value);
+            if (!isNaN(val) && !currentPaddingOptions.includes(val)) {
+                currentPaddingOptions.push(val);
+                input.value = '';
+                renderPaddingList();
+                await savePaddingConfig();
+            }
+        }
+
+        async function removePaddingOption(val) {
+            currentPaddingOptions = currentPaddingOptions.filter(v => v !== val);
+            renderPaddingList();
+            await savePaddingConfig();
+        }
+
+        async function savePaddingConfig() {
+            try {
+                await fetch('/update-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ padding_options: currentPaddingOptions })
+                });
+            } catch (err) { console.error("Failed to save padding config", err); }
+        }
+
+        // Load configuration on startup
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/config');
+                const config = await response.json();
+                if (config.save_location) {
+                    document.getElementById('saveLocation').value = config.save_location;
+                }
+                if (config.padding_by_mode) {
+                    paddingByMode = config.padding_by_mode;
+                } else if (config.crop_padding !== undefined) {
+                    paddingByMode = { 'auto': config.crop_padding, 'cd': config.crop_padding, 'tape': config.crop_padding, 'lp': config.crop_padding };
+                }
+                const initialMode = document.querySelector('input[name="mediaType"]:checked').value;
+                if (paddingByMode[initialMode] !== undefined) {
+                    document.getElementById('cropPadding').value = paddingByMode[initialMode];
+                }
+                if (config.ocr_stay_on_top !== undefined) {
+                    localStorage.setItem('wysiscan_ocr_stay_on_top', config.ocr_stay_on_top);
+                }
+                if (config.padding_options && Array.isArray(config.padding_options)) {
+                    currentPaddingOptions = config.padding_options;
+                }
+                // Load hotkeys, merging with defaults
+                hotkeys = { ...defaultHotkeys, ...(config.hotkeys || {}) };
+                renderHotkeys();
+
+                if (config.auto_delete_original !== undefined) {
+                    document.getElementById('autoDeleteOriginal').checked = config.auto_delete_original;
+                }
+                renderPaddingList();
+                fetchGroups(); // Load groups after config is loaded
+                fetchScanners(); // Load available scanners
+            } catch (e) {
+                console.error("Error loading config:", e);
+                // If config fails, use defaults
+                hotkeys = { ...defaultHotkeys };
+                renderHotkeys();
+            }
+
+            document.getElementById('saveCropBtn').addEventListener('click', saveCrop);
+            document.getElementById('cancelCropBtn').addEventListener('click', closeCropper);
+            
+            // Save padding setting when changed
+            document.getElementById('cropPadding').addEventListener('change', async (e) => {
+                const newPadding = parseInt(e.target.value) || 0;
+                const selectedMode = document.querySelector('input[name="mediaType"]:checked').value;
+                paddingByMode[selectedMode] = newPadding;
+                
+                try {
+                    await fetch('/update-config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ crop_padding: newPadding, padding_by_mode: paddingByMode })
+                    });
+                } catch (err) {
+                    console.error("Failed to save config", err);
+                }
+            });
+
+            // Save auto delete setting when changed
+            document.getElementById('autoDeleteOriginal').addEventListener('change', async (e) => {
+                try {
+                    await fetch('/update-config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ auto_delete_original: e.target.checked })
+                    });
+                } catch (err) { console.error("Failed to save config", err); }
+            });
+
+            // Init Theme
+            const savedTheme = localStorage.getItem('wysiscan_theme');
+            if (savedTheme === 'dark') {
+                document.body.setAttribute('data-theme', 'dark');
+            }
+
+            window.addEventListener('beforeunload', () => {
+                // Use navigator.sendBeacon for reliability on exit.
+                // It sends a POST request but doesn't wait for a response.
+                // The body is required, even if empty.
+                navigator.sendBeacon('/cleanup-backups', new Blob());
+            });
+        });
+
+        // Auto-load group when selected from datalist
+        document.getElementById('groupName').addEventListener('input', function(event) {
+            const selectedGroup = event.target.value;
+            if (knownGroups[selectedGroup] !== undefined) {
+                startOrResumeGroup();
+            }
+        });
+
+        // --- Auto-Close Logic ---
+        const originalFetch = window.fetch;
+        window.fetch = async (...args) => {
+            const response = await originalFetch(...args);
+            if (args[0] === '/exit' && response.ok) {
+                window.close();
+            }
+            return response;
+        };
+
+        function closeOcrModal() {
+            document.getElementById('ocrResultModal').style.display = 'none';
+        }
+
+        function copyOcrResult(btn) {
+            const textarea = document.getElementById('ocrResultText');
+            textarea.select();
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                const originalText = btn.innerText;
+                btn.innerText = "Copied!";
+                setTimeout(() => { btn.innerText = originalText; }, 1500);
+            });
+        }
+
+        async function toggleOcrStayOnTop(checked) {
+            document.getElementById('ocrResultModal').classList.toggle('stay-on-top', checked);
+            localStorage.setItem('wysiscan_ocr_stay_on_top', checked);
+            try {
+                await fetch('/update-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ocr_stay_on_top: checked })
+                });
+            } catch (err) {
+                console.error("Failed to save 'stay on top' config", err);
+            }
+        }
+
+        async function fetchScanners() {
+            try {
+                const response = await fetch('/list-scanners');
+                const data = await response.json();
+                const select = document.getElementById('scannerSelect');
+                select.innerHTML = '<option value="">(Default Scanner)</option>';
+                
+                if (data.status === 'success' && data.scanners) {
+                    data.scanners.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.innerText = s.name;
+                        if (s.id === data.selected_id) opt.selected = true;
+                        select.appendChild(opt);
+                    });
+                    if (data.scanners.length === 0) {
+                        select.innerHTML = '<option value="">No Scanners Found</option>';
+                    }
+                }
+            } catch (e) {
+                console.error("Error fetching scanners:", e);
+            }
+        }
+
+        async function updateScannerPreference() {
+            const scannerId = document.getElementById('scannerSelect').value;
+            try {
+                await fetch('/set-scanner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ scanner_id: scannerId })
+                });
+            } catch (e) {
+                console.error("Error setting scanner preference:", e);
+            }
+        }
+
+        async function extractAndLookup() {
+            const croppedImg = document.getElementById('croppedImg');
+            const path = croppedImg.dataset.path;
+
+            if (!path) {
+                alert("No cropped image available to look up.");
+                return;
+            }
+
+            const status = document.getElementById('status');
+            const btn = document.getElementById('extractAndLookupBtn');
+            const originalText = btn.innerText;
+            
+            btn.disabled = true;
+            btn.innerText = 'Working...';
+            status.innerText = 'Performing OCR and web lookup... This may take a moment.';
+
+            try {
+                const response = await fetch('/ocr-and-lookup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: path })
+                });
+                const data = await response.json();
+
+                if (data.status === 'success' && data.scraped_text) {
+                    showOcrPopup(data.scraped_text);
+                    status.innerText = 'Success! Results are in the popup.';
+                } else {
+                    status.innerText = 'Lookup failed: ' + (data.message || 'No release found or text was unreadable.');
+                    alert('Lookup failed: ' + (data.message || 'Could not find a matching release.'));
+                }
+            } catch (e) {
+                status.innerText = 'Network Error during lookup: ' + e;
+                alert('A network error occurred: ' + e);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
+        }
+
+        function showOcrPopup(text) {
+            const modal = document.getElementById('ocrResultModal');
+            const textarea = document.getElementById('ocrResultText');
+            const checkbox = document.getElementById('ocrStayOnTop');
+
+            textarea.value = text;
+            
+            const stayOnTop = localStorage.getItem('wysiscan_ocr_stay_on_top') === 'true';
+            checkbox.checked = stayOnTop;
+            modal.classList.toggle('stay-on-top', stayOnTop);
+
+            modal.style.display = 'block';
+        }
+
+        // --- Draggable Modal Logic ---
+        (function() {
+            const modal = document.getElementById('ocrResultModal');
+            const header = modal.querySelector('.ocr-modal-header');
+            let isDragging = false;
+            let startX, startY, initialLeft, initialTop;
+
+            header.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                
+                // Switch from transform centering to absolute positioning for dragging
+                const rect = modal.getBoundingClientRect();
+                modal.style.transform = 'none';
+                modal.style.left = rect.left + 'px';
+                modal.style.top = rect.top + 'px';
+                
+                initialLeft = rect.left;
+                initialTop = rect.top;
+                header.style.cursor = 'grabbing';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                modal.style.left = (initialLeft + (e.clientX - startX)) + 'px';
+                modal.style.top = (initialTop + (e.clientY - startY)) + 'px';
+            });
+
+            document.addEventListener('mouseup', () => { isDragging = false; header.style.cursor = 'grab'; });
+        })();
+
+        // --- Tilt & Auto-Align Logic ---
+        async function applyTilt() {
+            const angleInput = document.getElementById('tiltAngle');
+            const angle = angleInput ? angleInput.value : 0;
+            const padding = document.getElementById('cropPadding').value;
+
+            const pathsToRotate = [];
+            if (lastOriginalPath) pathsToRotate.push(lastOriginalPath);
+            if (lastCroppedPath && lastCroppedPath !== lastOriginalPath) pathsToRotate.push(lastCroppedPath);
+
+            if (pathsToRotate.length === 0) {
+                alert("No image loaded to rotate.");
+                return;
+            }
+
+            const btn = document.querySelector('#tilt-ui button');
+            const oldText = btn.innerText;
+            btn.innerText = "Rotating...";
+            btn.disabled = true;
+
+            for (const path of pathsToRotate) {
+                try {
+                    const isOriginal = (path === lastOriginalPath);
+                    const effectivePadding = isOriginal ? 0 : padding;
+                    const resp = await fetch('/deskew-image', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ path: path, angle: angle, padding: effectivePadding, skip_crop: isOriginal })
+                    });
+                    const res = await resp.json();
+                    if (res.status === 'success') {
+                        // Refresh any image on the page using this path
+                        document.querySelectorAll(`img[data-path="${CSS.escape(path)}"]`).forEach(img => {
+                            img.src = res.new_url;
+                        });
+                    } else {
+                        alert(`Error rotating ${path.split(/[\\/]/).pop()}: ${res.message}`);
+                    }
+                } catch (e) {
+                    alert(`Network error rotating ${path.split(/[\\/]/).pop()}: ${e}`);
+                }
+            }
+
+            btn.innerText = oldText;
+            btn.disabled = false;
+        }
+
+        async function autoDeskew() {
+            const padding = document.getElementById('cropPadding').value;
+            const pathsToDeskew = [];
+            if (lastOriginalPath) pathsToDeskew.push(lastOriginalPath);
+            if (lastCroppedPath && lastCroppedPath !== lastOriginalPath) pathsToDeskew.push(lastCroppedPath);
+
+            if (pathsToDeskew.length === 0) {
+                alert("No image loaded to align.");
+                return;
+            }
+
+            // Select button explicitly to support keyboard shortcuts
+            const btn = document.querySelectorAll('#tilt-ui button')[1] || event.target;
+            const oldText = btn.innerText;
+            btn.innerText = "Aligning...";
+            btn.disabled = true;
+            
+            for (const path of pathsToDeskew) {
+                try {
+                    const isOriginal = (path === lastOriginalPath);
+                    const effectivePadding = isOriginal ? 0 : padding;
+                    const resp = await fetch('/auto-deskew', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ path: path, padding: effectivePadding })
+                    });
+                    const res = await resp.json();
+                    if (res.status === 'success') {
+                        document.querySelectorAll(`img[data-path="${CSS.escape(path)}"]`).forEach(img => {
+                            img.src = res.new_url;
+                        });
+                    } else {
+                        alert(`Error aligning ${path.split(/[\\/]/).pop()}: ${res.message}`);
+                    }
+                } catch (e) {
+                    alert(`Network error aligning ${path.split(/[\\/]/).pop()}: ${e}`);
+                }
+            }
+
+            if (document.getElementById('tiltAngle')) {
+                document.getElementById('tiltAngle').value = 0;
+            }
+            btn.innerText = oldText;
+            btn.disabled = false;
+        }
+
+        function adjustTilt(delta) {
+            const input = document.getElementById('tiltAngle');
+            if (input) {
+                let val = parseFloat(input.value) || 0;
+                val = (val + delta).toFixed(1);
+                input.value = val;
+            }
+        }
+
+        // --- Hotkey Management ---
+        function formatHotkey(hotkeyObj) {
+            if (!hotkeyObj || !hotkeyObj.key) return 'None';
+            let parts = [];
+            if (hotkeyObj.ctrl) parts.push('Ctrl');
+            if (hotkeyObj.alt) parts.push('Alt');
+            if (hotkeyObj.shift) parts.push('Shift');
+            
+            let displayKey = hotkeyObj.key;
+            if (displayKey === ' ') displayKey = 'Space';
+            
+            parts.push(displayKey);
+            return parts.join(' + ');
+        }
+
+        function renderHotkeys() {
+            const list = document.getElementById('hotkey-list');
+            if (!list) return;
+            list.innerHTML = '';
+            for (const action in hotkeys) {
+                const hotkey = hotkeys[action];
+                const li = document.createElement('li');
+                li.style.display = 'flex';
+                li.style.justifyContent = 'space-between';
+                li.style.alignItems = 'center';
+                li.style.marginBottom = '8px';
+
+                li.innerHTML = `
+                    <span>${hotkey.description}</span>
+                    <div>
+                        <span style="display: inline-block; min-width: 120px; text-align: center; padding: 2px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg);">${formatHotkey(hotkey)}</span>
+                        <button onclick="changeHotkey('${action}')" style="padding: 2px 6px; font-size: 12px; margin: 0 0 0 5px;">Change</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            }
+        }
+
+        async function saveHotkeysConfig() {
+            try {
+                await fetch('/update-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hotkeys: hotkeys })
+                });
+            } catch (err) { console.error("Failed to save hotkeys config", err); }
+        }
+
+        function changeHotkey(action) {
+            if (isCapturingHotkey) return;
+            isCapturingHotkey = true;
+
+            const statusEl = document.getElementById('hotkey-capture-status');
+            statusEl.innerText = `Press new key for "${hotkeys[action].description}"... (ESC to cancel)`;
+
+            const captureHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (e.key !== 'Escape') {
+                    hotkeys[action] = {
+                        key: e.key,
+                        code: e.code,
+                        ctrl: e.ctrlKey,
+                        alt: e.altKey,
+                        shift: e.shiftKey,
+                        description: hotkeys[action].description // Preserve description
+                    };
+                    saveHotkeysConfig();
+                    renderHotkeys();
+                }
+
+                statusEl.innerText = '';
+                isCapturingHotkey = false;
+                document.removeEventListener('keydown', captureHandler, true); // Use capture phase to intercept before others
+            };
+
+            // Use capture phase (third argument `true`) to ensure this listener runs first
+            document.addEventListener('keydown', captureHandler, true);
+        }
+
+        // --- Keyboard Shortcuts ---
+        document.addEventListener('keydown', (e) => {
+            // Ignore if typing in an input field or capturing a new hotkey
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || isCapturingHotkey) return;
+
+            for (const action in hotkeys) {
+                const hotkey = hotkeys[action];
+                if (e.ctrlKey !== hotkey.ctrl || e.altKey !== hotkey.alt || e.shiftKey !== hotkey.shift || e.key.toLowerCase() !== hotkey.key.toLowerCase()) {
+                    continue;
+                }
+
+                e.preventDefault();
+                switch (action) {
+                    case 'scan': if (!document.getElementById('addToGroupBtn').disabled) addToGroup(); break;
+                    case 'recropLast': if (!document.getElementById('recropBtn').disabled) recropLast(); break;
+                    case 'clearGroup': clearGroupAndUI(); break;
+                    case 'undo': undoLastAction(); break;
+                    case 'redo': redoLastAction(); break;
+                    case 'autoAlign': autoDeskew(); break;
+                    case 'applyTilt': if (document.getElementById('tiltAngle') && parseFloat(document.getElementById('tiltAngle').value) !== 0) applyTilt(); break;
+                    case 'tiltLeft': case 'tiltRight': {
+                        const input = document.getElementById('tiltAngle'); if (!input) return;
+                        const step = 0.1;
+                        let val = parseFloat(input.value) || 0;
+                        val = (val + (action === 'tiltLeft' ? -step : step)).toFixed(1);
+                        input.value = val;
+                    } break;
+                    case 'paddingUp': case 'paddingDown': {
+                        const paddingInput = document.getElementById('cropPadding');
+                        if (!paddingInput) return;
+                        let currentVal = parseInt(paddingInput.value, 10);
+                        if (isNaN(currentVal)) currentVal = 0;
+                        const increment = (action === 'paddingUp' ? 1 : -1);
+                        paddingInput.value = currentVal + increment;
+                        // Trigger the onchange event to save the new padding
+                        paddingInput.dispatchEvent(new Event('change'));
+                    } break;
+                }
+                return; // Exit after finding and executing the first match
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || isCapturingHotkey) return;
+            const tiltLeftHotkey = hotkeys['tiltLeft'];
+            const tiltRightHotkey = hotkeys['tiltRight'];
+            if ((e.key === tiltLeftHotkey.key && !e.ctrlKey && !e.altKey && !e.shiftKey) || (e.key === tiltRightHotkey.key && !e.ctrlKey && !e.altKey && !e.shiftKey)) {
+                if (document.getElementById('tiltAngle')) {
+                    applyTilt();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+cryptography
+FreeSimpleGUI
+pypiwin32
+winshell
+Pillow
+tkinterdnd2
+pyperclip

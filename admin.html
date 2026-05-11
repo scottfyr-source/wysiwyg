@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WYSIWYG - Admin</title>
+    <link rel="icon" type="image/png" href="/fyrlogo.png">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="admin-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px;">
+            <div>
+                <h1 style="border-bottom: none; padding-bottom: 0; margin: 0;">Admin Dashboard</h1>
+                <div id="serverVersion" style="font-size: 12px; color: #007bff; font-weight: bold; margin-top: 4px;">Checking Server Version...</div>
+            </div>
+            <button onclick="window.open('/style-guide', '_blank')" style="background: #6f42c1; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 10px;">🎨 Style Guide</button>
+            <button onclick="window.close()" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">❌ Exit Admin</button>
+        </div>
+        
+        <div class="tool-section">
+            <h3>🧪 Scraper Tester</h3>
+            <p style="font-size: 13px; color: #666;">Paste a Discogs URL here to verify the scraper logic and edge cases (e.g. 2x12", Promo tags) without affecting the main app.</p>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="testUrl" placeholder="https://www.discogs.com/release/...">
+                <button onclick="testScrape()">Test Scrape</button>
+            </div>
+            <div id="scrapeResult"></div>
+        </div>
+
+        <div class="tool-section">
+            <h3>📋 Feature Requests & Bug Reports</h3>
+            <div id="requestList">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        // Apply theme on load
+        const savedTheme = localStorage.getItem('wysiwyg_theme');
+        if (savedTheme === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+        }
+
+        async function loadServerVersion() {
+            try {
+                const resp = await fetch('/api/version');
+                const data = await resp.json();
+                const el = document.getElementById('serverVersion');
+                if (data.server_version) {
+                    const v = data.server_version;
+                    el.innerText = `Latest Server Version: v${v.major}.${v.minor}.${v.patch}.${v.build || 0}`;
+                } else {
+                    el.innerText = "Server Version: Unknown (Offline?)";
+                    el.style.color = "#dc3545";
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function testScrape() {
+            const url = document.getElementById('testUrl').value;
+            if (!url) return alert("Please enter a URL");
+            
+            const resDiv = document.getElementById('scrapeResult');
+            resDiv.innerHTML = "Loading...";
+            
+            const formData = new FormData();
+            formData.append('url', url);
+
+            try {
+                const resp = await fetch('/scrape', { method: 'POST', body: formData });
+                const html = await resp.text();
+                resDiv.innerHTML = html;
+            } catch (e) {
+                resDiv.innerHTML = `<p style="color:red">Error: ${e}</p>`;
+            }
+        }
+
+        async function loadRequests() {
+            const list = document.getElementById('requestList');
+            try {
+                const resp = await fetch('/api/get-requests-json');
+                const data = await resp.json();
+                
+                if (data.length === 0) {
+                    list.innerHTML = "<p>No active requests.</p>";
+                    return;
+                }
+                
+                let html = '<table style="width:100%; border-collapse:collapse;">';
+                html += '<tr style="background:#eee; text-align:left;"><th style="padding:8px;">Date</th><th style="padding:8px;">User</th><th style="padding:8px;">Request</th><th style="padding:8px;">Action</th></tr>';
+                
+                data.forEach(req => {
+                    if(req.error) return;
+                    html += `<tr style="border-bottom:1px solid #ddd;">
+                        <td style="padding:8px; font-size:12px;">${req.timestamp}</td>
+                        <td style="padding:8px; font-size:12px;">${req.name}</td>
+                        <td style="padding:8px; font-size:12px;">${req.request}</td>
+                        <td style="padding:8px;">
+                            <button onclick="resolveRequest(${req.id})" style="background:#28a745; padding:5px 10px; font-size:12px;">Resolve</button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</table>';
+                list.innerHTML = html;
+            } catch(e) {
+                list.innerHTML = `<p style="color:red">Error loading requests: ${e}</p>`;
+            }
+        }
+
+        async function resolveRequest(id) {
+            if(!confirm("Mark this request as resolved? It will be removed from the list and added to the changelog.")) return;
+            
+            try {
+                const resp = await fetch('/api/resolve-request', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: id})
+                });
+                const res = await resp.json();
+                if(res.status === 'success') {
+                    alert(res.message);
+                    loadRequests();
+                } else {
+                    alert("Error: " + res.message);
+                }
+            } catch(e) {
+                alert("Error: " + e);
+            }
+        }
+
+        // Load on start
+        loadRequests();
+        loadServerVersion();
+
+        // Dummy functions to prevent errors if buttons in the scraped HTML are clicked
+        function transferToMainTool() { alert("This feature is only available in the main app."); }
+        function customAlert(msg) { alert(msg); }
+    </script>
+</body>
+</html>

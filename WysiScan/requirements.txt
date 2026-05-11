@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+opencv-python
+numpy
+pywin32
+pyinstaller
