@@ -62,15 +62,23 @@ def resource_path(relative_path):
         # Logic: Always prefer local file if it exists (allows user overrides/config)
         if os.path.exists(local_path):
             return local_path
-        return bundled_path
+        if os.path.exists(bundled_path):
+            return bundled_path
+        return local_path
     else:
         # --- DEV MODE ---
         return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
+# Helper to mount static directories safely
+def mount_static_dir(app_instance, folder_name, mount_path, name):
+    path = resource_path(folder_name)
+    if not os.path.exists(path):
+        logging.warning(f"Static directory {folder_name} not found at {path}. Creating local fallback.")
+        os.makedirs(path, exist_ok=True)
+    app_instance.mount(mount_path, StaticFiles(directory=path), name=name)
 
-# Mount sub-app directories to serve static files like icons
-app.mount("/UberPaste", StaticFiles(directory=resource_path("Uberpaste")), name="uberpaste_static")
-app.mount("/WysiScan", StaticFiles(directory=resource_path("WysiScan")), name="wysiscan_static")
-app.mount("/WalmartSheet", StaticFiles(directory=resource_path("WalmartSheet")), name="walmartsheet_static")
+mount_static_dir(app, "Uberpaste", "/UberPaste", "uberpaste_static")
+mount_static_dir(app, "WysiScan", "/WysiScan", "wysiscan_static")
+mount_static_dir(app, "WalmartSheet", "/WalmartSheet", "walmartsheet_static")
 
 # Include Walmart Router
 app.include_router(walmart_router)
@@ -1570,7 +1578,7 @@ async def scrape_discogs(url: str = Form(...)):
                     document.body.appendChild(container);
 
                     // Try to find the button by ID, then by text content
-                    let scrapeBtn = document.getElementById('scrape-button');
+                    let scrapeBtn = document.getElementById('scrapeBtn') || document.getElementById('scrape-button');
                     if (!scrapeBtn) {{
                         const buttons = document.getElementsByTagName('button');
                         for (let btn of buttons) {{

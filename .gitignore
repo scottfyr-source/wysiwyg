@@ -20,6 +20,15 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 node_modules/
+venv/
+ENV/
+
+# Installer/Compiled files
+*.exe
+*.msi
+*.zip
+*.7z
+*.rar
 
 # Local Configuration and Secrets
 .env

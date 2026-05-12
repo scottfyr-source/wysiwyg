@@ -28,7 +28,8 @@ FILES_TO_INSTALL = [
     "styles.css",
     "style_guide.html",
     "walmart.html",
-    "walmart.js"
+    "walmart.js",
+    "app.js"
 ]
 
 SUB_DIRECTORIES_TO_INSTALL = [

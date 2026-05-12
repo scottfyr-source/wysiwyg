@@ -794,9 +794,11 @@ function runCalculator() {
 
 function saveVariableConditions() {
     const mediaCondition = getVal('conditionOfMedia');
+    const skuFlag = getVal('skuFlag');
     const isOOP = document.getElementById('oopToggle').checked;
 
     localStorage.setItem('wysiwyg_variable_media_condition', mediaCondition);
+    localStorage.setItem('wysiwyg_variable_sku_flag', skuFlag);
     localStorage.setItem('wysiwyg_variable_is_oop', String(isOOP));
 
     const btn = document.getElementById('saveVariableConditionsBtn');
@@ -811,6 +813,7 @@ function saveVariableConditions() {
 
 function loadVariableConditions() {
     const savedMediaCondition = localStorage.getItem('wysiwyg_variable_media_condition');
+    const savedSkuFlag = localStorage.getItem('wysiwyg_variable_sku_flag');
     const savedIsOOP = localStorage.getItem('wysiwyg_variable_is_oop');
 
     if (savedMediaCondition) {
@@ -831,6 +834,14 @@ function loadVariableConditions() {
             // If modifier not found, check the "none" radio
             const noneRadio = document.querySelector('input[name="media_modifier"][value=""]');
             if (noneRadio) noneRadio.checked = true;
+        }
+    }
+
+    if (savedSkuFlag) {
+        const skuSelect = document.getElementById('skuFlag');
+        if (skuSelect) {
+            const option = Array.from(skuSelect.options).find(opt => opt.value === savedSkuFlag);
+            if (option) skuSelect.value = savedSkuFlag;
         }
     }
 
@@ -1104,7 +1115,8 @@ function parsePastedData(input) {
                     expandedFStr = expandedFStr.replace(match[0], expandedTags);
                 }
             }
-            document.getElementById('formatLine').innerText = expandedFStr;
+            const formatLineEl = document.getElementById('formatLine');
+            if (formatLineEl) formatLineEl.innerText = expandedFStr;
             const fLower = expandedFStr.toLowerCase();
 
             // Media Format Logic: Longest Match Wins
@@ -1199,7 +1211,7 @@ function generateListingData() {
         mediaCond: getVal('conditionOfMedia') || "",
         sleeveCond: getVal('sleeveCondition') || "",
         country: getVal('country').trim(),
-        formatLineRaw: document.getElementById('formatLine').innerText || "",
+        formatLineRaw: document.getElementById('formatLine')?.innerText || "",
         mediaDesc: document.getElementById('mediaDescriptionText').value.trim() || "",
         colorVal: document.getElementById('mediaColor').value.trim(),
         preFM: getVal('preFM'),
@@ -1207,6 +1219,7 @@ function generateListingData() {
         mediaFormat: getVal('mediaFormat') || "",
         postFM: getVal('postFM') || "",
         sleevePkg: getVal('sleevePackaging'),
+        formatLineRaw: document.getElementById('formatLine')?.innerText || "",
         pkgFeature: getVal('packagingFeature'),
         edition: getVal('edition'),
         formatTags: getVal('formatTags'),
@@ -1499,9 +1512,9 @@ function assembleDescription(inputs, country, fmtData) {
         // Case B: sleeve condition set, sleeve desc BLANK.
         // Order: ... sleeveCond, sleeveTypeLabel, "sleevePkg with condition"
         // This produces e.g.: "Very Good+ JCard Jewel Case with cracking"
-        const sleeveTail = [fmtData.sleevePkg, fmtData.conditionPhrase]
-            .filter(p => p && p.trim())
-            .join(' with ');
+        const sleeveTail = (fmtData.sleevePkg && fmtData.sleevePkg.trim())
+            ? fmtData.sleevePkg + ' with ' + fmtData.conditionPhrase 
+            : 'with ' + fmtData.conditionPhrase;
 
         parts = [
             inputs.mediaCond,
@@ -1740,7 +1753,7 @@ function inferSkuCode(rawLine, mediaFormat, sleevePkg) {
         const counts = [
             { code: "CD", count: cCD, regex: rCD },
             { code: "DVD", count: cDVD, regex: rDVD },
-            { code: "BLUERAY", count: cBD, regex: rBD },
+            { code: "BLURAY", count: cBD, regex: rBD },
             { code: "VINYL", count: cVinyl, regex: rVinyl },
             { code: "CASS", count: cCass, regex: rCass }
         ];
@@ -1758,7 +1771,7 @@ function inferSkuCode(rawLine, mediaFormat, sleevePkg) {
     // 2. LEGACY / VIDEO
     if (combined.includes("reel")) return "REEL";
     if (combined.includes("8-track")) return "8TRACK";
-    if (combined.includes("blu-ray")) return "BLUERAY";
+    if (combined.includes("blu-ray")) return "BLURAY";
     if (combined.includes("dvd")) return "DVD";
     if (combined.includes("vhs")) return "VHS";
 

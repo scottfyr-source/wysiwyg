@@ -25,9 +25,9 @@ DELETE FIELD: Color/Weight/RPM
 
 
 Factory Sealed with Security Strip Club Edition 1997 USA Remastered Cassette Very Good Jcard with water damage is Out of Print with 10 Tracks - ForeFront Records FFC5176
-(media condition) (packaging feature) (edition) (year) (country)(format tag)(media format) (media description)(sleeve condition)(sleeve condition / describe flaws) ) is (OOP) with (track count) - (label name) (cat num)
+(media condition) (packaging feature) (edition) (year) (country)(format tag)(media format) (media description)(sleeve condition) (sleeve packaging) with (describe flaws) is (OOP) with (track count) - (label name) (cat num)
 
-(media condition) (packaging feature) (edition) (year) (country) (format tag) (Pre FM) (Color) (media format) (Post FM) (media description) (sleeve condition) (sleeve packaging) (sleeve description) is (OOP) with (track count) - (label name) (cat num)
+(media condition) (packaging feature) (edition) (year) (country) (format tag) (Pre FM) (Color) (media format) (Post FM) (media description) (sleeve condition) (sleeve packaging) with (sleeve description) is (OOP) with (track count) - (label name) (cat num)
 
 change specificFormat to sleevepackaging
 
