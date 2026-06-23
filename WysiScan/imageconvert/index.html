@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vivid Image Converter</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:,">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="assets/css/all.min.css">
+</head>
+<body>
+
+    <!-- Radial Background glows -->
+    <div class="bg-gradient-glow"></div>
+    <div class="bg-gradient-glow-2"></div>
+
+    <!-- Application Layout -->
+    <div class="app-layout">
+        
+        <!-- Left Panel: Conversion Controls & Settings -->
+        <aside class="settings-panel">
+            <div class="panel-header-section">
+                <span class="logo-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                <span class="logo-text">VIVID CONVERT</span>
+                <span class="version-badge">v1.0.0</span>
+            </div>
+
+            <div class="settings-scroll-container">
+                <!-- Output Format Card -->
+                <div class="setting-card">
+                    <h4 class="card-title"><i class="fa-solid fa-file-export"></i> Output Format</h4>
+                    <div class="format-toggle-group">
+                        <button class="format-btn active" data-format="jpg">JPG</button>
+                        <button class="format-btn" data-format="png">PNG</button>
+                        <button class="format-btn" data-format="webp">WEBP</button>
+                    </div>
+                </div>
+
+                <!-- Preset Sizes Card -->
+                <div class="setting-card">
+                    <h4 class="card-title"><i class="fa-solid fa-maximize"></i> Target Dimensions</h4>
+                    
+                    <span class="sub-label">Sizing Presets</span>
+                    <div class="presets-grid">
+                        <button class="preset-btn" data-width="540" data-height="540">540x540 <span class="preset-desc">1:1 Square</span></button>
+                        <button class="preset-btn" data-width="1080" data-height="1080">1080x1080 <span class="preset-desc">1:1 HQ</span></button>
+                        <button class="preset-btn" data-width="2200" data-height="2200">2200x2200 <span class="preset-desc">1:1 Print/Arch</span></button>
+                        <button class="preset-btn" data-width="800" data-height="600">800x600 <span class="preset-desc">4:3 Web</span></button>
+                        <button class="preset-btn" data-width="1200" data-height="630">1200x630 <span class="preset-desc">1.91:1 Share</span></button>
+                        <button class="preset-btn active" data-width="1920" data-height="1080">1920x1080 <span class="preset-desc">16:9 Full HD</span></button>
+                        <button class="preset-btn" data-width="1080" data-height="1350">1080x1350 <span class="preset-desc">4:5 Social</span></button>
+                        <button class="preset-btn" data-width="1080" data-height="1920">1080x1920 <span class="preset-desc">9:16 Story</span></button>
+                        <button class="preset-btn" id="btn-custom-size">Custom <span class="preset-desc">User values</span></button>
+                    </div>
+
+                    <div class="dimensions-input-row">
+                        <div class="input-group">
+                            <span class="input-prefix">W</span>
+                            <input type="number" id="input-width" value="1920" min="1" max="10000" class="num-input">
+                        </div>
+                        <div class="dimension-x">×</div>
+                        <div class="input-group">
+                            <span class="input-prefix">H</span>
+                            <input type="number" id="input-height" value="1080" min="1" max="10000" class="num-input">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resizing & Scaling Mode -->
+                <div class="setting-card">
+                    <h4 class="card-title"><i class="fa-solid fa-compress"></i> Scaling &amp; Cropping</h4>
+                    
+                    <div class="form-group">
+                        <label for="select-scale-mode" class="form-label">Scale Mode</label>
+                        <select id="select-scale-mode" class="custom-select">
+                            <option value="proportional" selected>Scale Proportional (Aspect Ratio)</option>
+                            <option value="crop">Scale &amp; Crop (Fill Canvas)</option>
+                            <option value="fit">Scale &amp; Letterbox (Fit Canvas)</option>
+                            <option value="stretch">Stretch (Fit Exactly)</option>
+                        </select>
+                    </div>
+
+                    <!-- Background Fill Color Picker (Shown on Fit mode or JPG flatten) -->
+                    <div class="form-group" id="bg-color-group">
+                        <label for="color-picker-bg" class="form-label">Canvas Background Fill</label>
+                        <div class="color-picker-row">
+                            <input type="color" id="color-picker-bg" value="#000000">
+                            <input type="text" id="color-hex-bg" value="#000000" class="hex-input" maxlength="7">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quality & Compression (Only visible for JPG / WEBP) -->
+                <div class="setting-card" id="quality-card">
+                    <div class="card-header-row">
+                        <h4 class="card-title"><i class="fa-solid fa-sliders"></i> Image Quality</h4>
+                        <span id="quality-val" class="accent-text">90%</span>
+                    </div>
+                    <input type="range" id="slider-quality" min="1" max="100" value="90" class="range-slider">
+                    <div class="range-labels">
+                        <span>Small size</span>
+                        <span>High Quality</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer: Big Conversion Trigger -->
+            <div class="settings-footer">
+                <div class="output-folder-group">
+                    <span class="form-label" style="margin-bottom: 4px;">Destination folder</span>
+                    <div class="folder-select-row">
+                        <input type="text" id="input-output-dir" placeholder="Same as source directory" readonly>
+                        <button class="btn-icon" onclick="chooseOutputDir()" title="Choose output folder"><i class="fa-solid fa-folder-open"></i></button>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-convert" id="btn-convert-trigger" onclick="runConversion()">
+                    <i class="fa-solid fa-circle-play"></i> BATCH CONVERT
+                </button>
+            </div>
+        </aside>
+
+        <!-- Right Panel: Workspace, File Queue, Progress, Log -->
+        <main class="workspace-panel">
+            <header class="workspace-header">
+                <div class="workspace-title">
+                    <h2>Image Batch Converter</h2>
+                    <span class="file-count-badge" id="badge-total-files">0 Files Queue</span>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="clearQueue()"><i class="fa-solid fa-trash-can"></i> Clear Queue</button>
+                    <button class="btn btn-danger btn-icon-only" onclick="exitApp()" title="Exit Utility"><i class="fa-solid fa-power-off"></i></button>
+                </div>
+            </header>
+
+            <!-- Active Conversion Status -->
+            <section class="progress-bar-panel" id="progress-container" style="display: none;">
+                <div class="progress-info-row">
+                    <span class="progress-task-label" id="progress-status-label">Converting images...</span>
+                    <span class="progress-percentage-label" id="progress-percent-label">0%</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" id="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+            </section>
+
+            <!-- Workspace Body -->
+            <div class="workspace-scroll-body">
+                <!-- Dropzone and selection area -->
+                <div class="dropzone-panel" id="image-dropzone">
+                    <div class="dropzone-glow"></div>
+                    <i class="fa-solid fa-images dropzone-icon"></i>
+                    <h3>Add Images to Batch</h3>
+                    <p class="dropzone-sub">Supports PNG, JPG, JPEG, WEBP, BMP, TIFF, GIF</p>
+                    <div class="dropzone-actions">
+                        <button class="btn btn-secondary" onclick="chooseFiles()"><i class="fa-solid fa-file-image"></i> Select Files...</button>
+                        <button class="btn btn-secondary btn-accent-cyan" onclick="chooseFolder()"><i class="fa-solid fa-folder-open"></i> Select Folder...</button>
+                    </div>
+                </div>
+
+                <!-- Table Queue Panel -->
+                <div class="panel queue-panel" id="queue-panel" style="display: none;">
+                    <div class="panel-header">
+                        <h3 class="panel-title"><i class="fa-solid fa-list-ul"></i> Image Batch Queue</h3>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60%;">Image Name</th>
+                                    <th style="width: 20%;">Size</th>
+                                    <th style="width: 20%; text-align: right;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="queue-tbody">
+                                <!-- Dynamic File Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Activity Log Terminal -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title"><i class="fa-solid fa-terminal"></i> Activity Log Terminal</h3>
+                        <button class="btn-clear" onclick="clearConsoleLog()">Clear</button>
+                    </div>
+                    <div class="log-terminal" id="terminal-logger">
+                        <div class="log-entry info">Vivid Image Converter initialized. Add files and set dimensions to begin.</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- UI Overlay notification -->
+    <div class="notification-container" id="notification-box"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -693,6 +693,7 @@ def _run_py_dialog(script: str) -> str:
 def browse_folder(data: dict = Body(default={})):
     try:
         current_path = data.get("path")
+        config_key = data.get("config_key", "save_location")
         
         # Build the python script for the subprocess
         script = [
@@ -702,7 +703,7 @@ def browse_folder(data: dict = Body(default={})):
             "root = tk.Tk()",
             "root.withdraw()",
             "root.wm_attributes('-topmost', 1)",
-            "kwargs = {'parent': root, 'title': 'Select Save Location'}"
+            "kwargs = {'parent': root, 'title': 'Select Location'}"
         ]
         if current_path and os.path.isdir(current_path):
             escaped = current_path.replace("\\", "\\\\").replace("'", "\\'")
@@ -716,7 +717,8 @@ def browse_folder(data: dict = Body(default={})):
         # Tkinter returns forward slashes, normalize to backslashes for Windows
         if path:
             path = os.path.normpath(path)
-            save_config_setting("save_location", path)
+            if config_key:
+                save_config_setting(config_key, path)
             return {"status": "success", "path": path}
         return {"status": "cancelled"}
     except Exception as e:
@@ -758,6 +760,86 @@ async def update_config(data: dict = Body(...)):
         save_config_setting(key, value)
     return {"status": "success"}
 
+@app.post("/batch-convert")
+async def batch_convert(data: dict = Body(...)):
+    source_folder = data.get("source_folder")
+    output_folder = data.get("output_folder")
+    format_type = data.get("format", "jpg")
+    width = data.get("width")
+    height = data.get("height")
+    
+    if not source_folder or not os.path.exists(source_folder):
+        return {"status": "error", "message": "Source folder does not exist"}
+        
+    if not output_folder:
+        output_folder = source_folder
+        
+    # Build command
+    if getattr(sys, 'frozen', False):
+        cmd = [sys.executable, "--imageconvert"]
+    else:
+        python_exe = sys.executable
+        if python_exe.endswith('pythonw.exe'):
+            python_exe = python_exe.replace('pythonw.exe', 'python.exe')
+        script_path = os.path.join(ASSET_DIR, "imageconvert", "app.py")
+        cmd = [python_exe, script_path]
+        
+    cmd.extend([
+        "--source", source_folder, 
+        "--output", output_folder, 
+        "--format", format_type,
+        "--scale", "proportional"
+    ])
+    
+    if width:
+        cmd.extend(["--width", str(width)])
+    if height:
+        cmd.extend(["--height", str(height)])
+        
+    try:
+        creationflags = 0
+        if os.name == 'nt':
+            creationflags = 0x08000000  # CREATE_NO_WINDOW
+            
+        logging.info(f"Launching batch convert CLI: {cmd}")
+        # Run blocking synchronous call
+        res = subprocess.run(
+            cmd, 
+            capture_output=True, 
+            text=True, 
+            creationflags=creationflags, 
+            check=True
+        )
+        logging.info(f"Batch convert CLI success. Stdout: {res.stdout}")
+        return {"status": "success", "message": "Batch conversion completed successfully."}
+    except subprocess.CalledProcessError as e:
+        stderr_output = e.stderr or ""
+        stdout_output = e.stdout or ""
+        logging.error(f"Batch convert CLI subprocess failed: {e}\nStdout: {stdout_output}\nStderr: {stderr_output}")
+        return {"status": "error", "message": f"Conversion failed: {e.stderr or str(e)}"}
+    except Exception as e:
+        logging.error(f"Batch convert CLI failed: {e}", exc_info=True)
+        return {"status": "error", "message": str(e)}
+
+@app.post("/open-convert-gui")
+async def open_convert_gui():
+    if getattr(sys, 'frozen', False):
+        cmd = [sys.executable, "--imageconvert"]
+    else:
+        python_exe = sys.executable
+        if python_exe.endswith('python.exe'):
+            python_exe = python_exe.replace('python.exe', 'pythonw.exe')
+        script_path = os.path.join(ASSET_DIR, "imageconvert", "app.py")
+        cmd = [python_exe, script_path]
+    
+    try:
+        logging.info(f"Launching GUI process: {cmd}")
+        subprocess.Popen(cmd)
+        return {"status": "success", "message": "Image converter GUI opened."}
+    except Exception as e:
+        logging.error(f"Failed to open GUI process: {e}", exc_info=True)
+        return {"status": "error", "message": str(e)}
+
 @app.get("/view-image")
 async def view_image(path: str):
     if os.path.exists(path):
@@ -787,9 +869,12 @@ async def trigger_scan(data: dict = Body(...)):
 
     # Initialize reference holders for explicit COM release
     device_manager = None
+    device_infos = None
+    device_info = None
     scanner_device = None
     scan_item = None
     image = None
+    prop = None
     final_path = None
     scan_success = False
 
@@ -806,9 +891,12 @@ async def trigger_scan(data: dict = Body(...)):
             
             scanner_device = None
             
+            # Load scanner device infos
+            device_infos = device_manager.DeviceInfos
+            
             if preferred_scanner_id:
                 # Try to find the exact scanner requested
-                for device_info in device_manager.DeviceInfos:
+                for device_info in device_infos:
                     if device_info.DeviceID == preferred_scanner_id:
                         try:
                             scanner_device = device_info.Connect()
@@ -819,7 +907,7 @@ async def trigger_scan(data: dict = Body(...)):
             
             if not scanner_device:
                 # Fallback to the first available scanner device
-                for device_info in device_manager.DeviceInfos:
+                for device_info in device_infos:
                     if device_info.Type == 1:  # 1 for Scanner device type
                         try:
                             scanner_device = device_info.Connect()
@@ -871,8 +959,10 @@ async def trigger_scan(data: dict = Body(...)):
                 
                 # CRITICAL: WIA's SaveFile fails if the file already exists.
                 if os.path.exists(temp_path):
-                    try: os.remove(temp_path)
-                    except: pass
+                    try:
+                        os.remove(temp_path)
+                    except:
+                        pass
                 
                 image.SaveFile(temp_path)
                 
@@ -886,9 +976,12 @@ async def trigger_scan(data: dict = Body(...)):
             return {"status": "error", "message": f"WIA Error: {str(wia_error)}"}
         finally:
             # Explicitly release COM objects before CoUninitialize to prevent IUnknown release exceptions
+            prop = None
             image = None
             scan_item = None
             scanner_device = None
+            device_info = None
+            device_infos = None
             device_manager = None
             pythoncom.CoUninitialize()
         
@@ -940,6 +1033,7 @@ async def list_scanners():
     """Lists all available WIA scanner devices."""
     device_manager = None
     device_infos = None
+    device_info = None
     try:
         pythoncom.CoInitialize()
         device_manager = win32com.client.Dispatch("WIA.DeviceManager")
@@ -961,6 +1055,7 @@ async def list_scanners():
     except Exception as e:
         return {"status": "error", "message": str(e)}
     finally:
+        device_info = None
         device_infos = None
         device_manager = None
         pythoncom.CoUninitialize()

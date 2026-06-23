@@ -91,7 +91,7 @@
         <div class="control-group">
             <label for="rowOutput">Tab-Separated Row (For Excel)</label>
             <textarea id="rowOutput" rows="8" readonly onclick="this.select()"></textarea>
-            <button id="generateRowBtn" style="background-color: var(--secondary);">3. Generate & Copy Row</button>
+            <button id="generateRowBtn" style="background-color: var(--secondary);" disabled>3. Generate & Copy Row</button>
         </div>
         <hr>
         <h2>Advanced</h2>
@@ -113,7 +113,7 @@
         <div class="field-group" style="grid-column: span 3;"><label>SKU</label><input type="text" id="sku" style="width: 100%;"></div>
         <div class="field-group" style="min-width: 70px; max-width: 90px;"><label>Music (*)</label><input type="text" id="music" value="Music" readonly></div>
         <div class="field-group"><label>Product ID Type</label><select id="productIdType"><option value="UPC">UPC</option><option value="GTIN">GTIN</option><option value="ISBN">ISBN</option></select></div>
-        <div class="field-group"><label>Product ID</label><input type="text" id="productId"></div>
+        <div class="field-group"><label>Product ID <span style="color: red;">* (Req.)</span></label><input type="text" id="productId"></div>
         
         <div class="field-group"><label>Selling Price</label><input type="text" id="sellingPrice"></div>
         <div class="field-group"><label>Shipping Weight (lbs)</label><select id="shippingWeight"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
@@ -201,6 +201,11 @@
     let genreMap = {};     // Global variable to store Discogs->Walmart mapping
     let tempFeatures = [];
 
+    function validateGenerateBtn() {
+        const val = document.getElementById('productId').value.trim();
+        document.getElementById('generateRowBtn').disabled = val.length === 0;
+    }
+
     document.addEventListener('DOMContentLoaded', async () => { // Make event listener async
         const savedTheme = localStorage.getItem('wysiwyg_theme');
         if (savedTheme === 'dark') document.body.setAttribute('data-theme', 'dark');
@@ -224,12 +229,14 @@
 
         document.getElementById('siteStartDate').value = localDateStr();
 
-        // Auto-switch UPC/GTIN when user manually types in Product ID
+        // Auto-switch UPC/GTIN when user manually types in Product ID and validate Generate button
         document.getElementById('productId').addEventListener('input', (e) => {
-            const digits = e.target.value.replace(/\D/g, '');
+            const val = e.target.value.trim();
+            const digits = val.replace(/\D/g, '');
             if (digits.length > 0) {
                 document.getElementById('productIdType').value = digits.length >= 13 ? 'GTIN' : 'UPC';
             }
+            validateGenerateBtn();
         });
         
         initializeDropdowns();
@@ -528,6 +535,7 @@
             }
 
             showToast('✅ Data loaded from builder!');
+            validateGenerateBtn();
         } catch (error) {
             showToast(error.message, true);
         } finally {
@@ -715,12 +723,13 @@
                 setDropdownValueWithFallback('countryOfOrigin', countryToSet, 'United States', true);
             }
             
-            const barcode = discogs.identifiers?.find(id => id.type === 'Barcode')?.value.replace(/\D/g, '');
-            if (barcode && !document.getElementById('productId').value) {
-                document.getElementById('productId').value = barcode;
-                // Auto-set UPC vs GTIN based on digit length
-                document.getElementById('productIdType').value = barcode.length >= 13 ? 'GTIN' : 'UPC';
-            }
+            // Product ID is deliberately left blank and required to be manually scanned by the user
+            // const barcode = discogs.identifiers?.find(id => id.type === 'Barcode')?.value.replace(/\D/g, '');
+            // if (barcode && !document.getElementById('productId').value) {
+            //     document.getElementById('productId').value = barcode;
+            //     // Auto-set UPC vs GTIN based on digit length
+            //     document.getElementById('productIdType').value = barcode.length >= 13 ? 'GTIN' : 'UPC';
+            // }
 
             applyExpertGenreMapping(discogs, true);
 
@@ -731,6 +740,8 @@
             } else if (listing) {
                 setDropdownValueWithFallback('condition', "Used", 'Used', false);
             }
+
+            validateGenerateBtn();
 
             const siteDescEl = document.getElementById('siteDescription');
             if (listing && listing.comments && listing.comments.trim() !== '') {
@@ -840,7 +851,7 @@
         }).catch(() => {
             showToast('Could not copy to clipboard.', true);
         }).finally(() => {
-            btn.disabled = false;
+            validateGenerateBtn();
         });
     }
 
@@ -1017,10 +1028,10 @@
         document.getElementById('fulfillmentId').value = '10001373153';
         document.getElementById('mediaType').value = '';
         updateDimensions();
-        // Use globally stored pulldownData for consistency, fallback if not loaded
         populateSelect('countryOfOrigin', 
                        pulldownData.country_of_origin || ['United States', 'Canada', 'Mexico', 'United Kingdom'], 
                        'United States');
+        validateGenerateBtn();
     }
 
     async function exitWalmartSheet() {

@@ -1791,10 +1791,26 @@ if __name__ == "__main__":
     import uvicorn # Already imported
     import webbrowser # Already imported
     import os # Already imported
-    # threading is already imported at top level
+    import sys # Already imported
+    
+    logging.info(f"Executable entry point called with sys.argv: {sys.argv}")
 
     # --- DISPATCHER FOR SUB-PROCESSES (FROZEN MODE) ---
     if getattr(sys, 'frozen', False):
+        if "-c" in sys.argv:
+            try:
+                sys.path.append(sys._MEIPASS)
+                c_index = sys.argv.index("-c")
+                code_to_run = sys.argv[c_index + 1]
+                exec(code_to_run)
+                sys.exit()
+            except Exception as e:
+                import traceback
+                logging.error(f"Failed to execute dynamic code via -c: {e}\n{traceback.format_exc()}")
+                with open("wysiwyg_debug.log", "a", encoding="utf-8") as f_log:
+                    f_log.write(f"\nCRITICAL - Dynamically executed code crash via -c: {e}\n{traceback.format_exc()}\n")
+                sys.exit(1)
+
         if "--uberpaste" in sys.argv:
             # Add sys._MEIPASS to path so we can import the bundled modules
             sys.path.append(sys._MEIPASS)
@@ -1804,11 +1820,32 @@ if __name__ == "__main__":
             sys.exit()
             
         if "--wysiscan" in sys.argv:
-            sys.path.append(sys._MEIPASS)
-            # Import and run WysiScan
-            from WysiScan.scanner_server import run_server as run_wysiscan
-            run_wysiscan()
-            sys.exit()
+            try:
+                sys.path.append(sys._MEIPASS)
+                # Import and run WysiScan
+                from WysiScan.scanner_server import run_server as run_wysiscan
+                run_wysiscan()
+                sys.exit()
+            except Exception as e:
+                import traceback
+                logging.error(f"WysiScan failed under --wysiscan: {e}\n{traceback.format_exc()}")
+                with open("wysiwyg_debug.log", "a", encoding="utf-8") as f_log:
+                    f_log.write(f"\nCRITICAL - WysiScan subprocess crash: {e}\n{traceback.format_exc()}\n")
+                sys.exit(1)
+
+        if "--imageconvert" in sys.argv:
+            try:
+                sys.path.append(sys._MEIPASS)
+                sys.argv.remove("--imageconvert")
+                from WysiScan.imageconvert.app import main as run_imageconvert
+                run_imageconvert()
+                sys.exit()
+            except Exception as e:
+                import traceback
+                logging.error(f"Image Converter failed under --imageconvert: {e}\n{traceback.format_exc()}")
+                with open("wysiwyg_debug.log", "a", encoding="utf-8") as f_log:
+                    f_log.write(f"\nCRITICAL - Image Converter subprocess crash: {e}\n{traceback.format_exc()}\n")
+                sys.exit(1)
 
     logging.info("--- APPLICATION STARTING ---")
 
