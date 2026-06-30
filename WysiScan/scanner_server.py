@@ -613,13 +613,28 @@ def auto_crop_image(image_path, output_path=None, padding=5, media_type="auto"):
     # 7. Bounding Box
     final_x, final_y, final_w, final_h = cv2.boundingRect(best_cnt)
     
-    # 8. Padding (Ensure we don't go out of bounds)
-    pad = padding
-    x = max(0, final_x - pad)
-    y = max(0, final_y - pad)
-    w = min(w_img - x, final_w + (pad * 2))
-    h = min(h_img - y, final_h + (pad * 2))
+    # 8. Padding (Ensure we don't go out of bounds or create empty/invalid images)
+    try:
+        pad = int(padding)
+    except (ValueError, TypeError):
+        pad = 5
+        
+    w = final_w + (pad * 2)
+    h = final_h + (pad * 2)
     
+    # If padding makes the crop box negative or empty, fall back to the unpadded bounding box
+    if w <= 0 or h <= 0:
+        x, y, w, h = final_x, final_y, final_w, final_h
+    else:
+        x = max(0, final_x - pad)
+        y = max(0, final_y - pad)
+        w = min(w_img - x, final_w + (pad * 2))
+        h = min(h_img - y, final_h + (pad * 2))
+        
+        # If clipping to the image border makes it empty, fall back
+        if w <= 0 or h <= 0:
+            x, y, w, h = final_x, final_y, final_w, final_h
+            
     cropped = img[y:y+h, x:x+w]
     
     # Save cropped image

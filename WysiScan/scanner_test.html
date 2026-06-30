@@ -308,7 +308,7 @@
                         <button onclick="clearGroupAndUI()" title="Clear group name and reset UI" style="padding: 2px 6px; font-size: 11px; background-color: #dc3545; color: white; min-width: auto; margin-right: 0;">Clear</button>
                     </div>
                     <div class="input-group">
-                        <input type="text" id="groupName" list="groupList" placeholder="Type new name, or select existing" autocomplete="off" style="width: 100%; box-sizing: border-box;">
+                        <input type="text" id="groupName" list="groupList" placeholder="Type new name, or select existing" autocomplete="off" style="width: 100%; box-sizing: border-box;" onkeydown="if (event.key === 'Enter') startOrResumeGroup();">
                         <datalist id="groupList"></datalist>
                         <button id="newGroupBtn" onclick="startOrResumeGroup()" style="white-space: nowrap;">Start Group</button>
                     </div>

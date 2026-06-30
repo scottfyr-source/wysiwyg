@@ -440,7 +440,7 @@ async function setupSaveConditionsButton() {
 
 async function loadAppVersion() {
     try {
-        const resp = await fetch('/api/version');
+        const resp = await fetch('/api/version?t=' + new Date().getTime());
         const v = await resp.json();
         const vStr = `${v.major}.${v.minor}.${v.patch}.${v.build || 0}`;
 
@@ -466,6 +466,8 @@ async function loadAppVersion() {
         if (v.update_available) {
             titleHtml += ` <span onclick="event.stopPropagation(); runInstaller()" style="cursor:pointer; background: #ffc107; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-left: 10px; border: 1px solid #000; vertical-align: middle;" title="Click to run installer">* UPDATE AVAILABLE *</span>`;
             document.getElementById('updateBanner').style.display = 'block';
+        } else {
+            document.getElementById('updateBanner').style.display = 'none';
         }
         if (titleEl) titleEl.innerHTML = titleHtml;
     } catch (e) { console.error("Version load failed", e); }
