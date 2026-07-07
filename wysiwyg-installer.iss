@@ -22,6 +22,7 @@ Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
+CloseApplications=force
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -80,9 +81,10 @@ var
   ResultCode: Integer;
 begin
   // Gracefully terminate running instances of the app or its components prior to copying files
-  Exec('taskkill', '/F /IM WYSIWYG.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec('taskkill', '/F /IM WysiScan.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec('taskkill', '/F /IM XDevHubX.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM WYSIWYG.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM WysiScan.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM XDevHubX.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(1500); // Give the OS time to release file handles
   Result := True;
 end;
 
@@ -104,8 +106,9 @@ begin
   if CurUninstallStep = usUninstall then
   begin
     // Terminate processes before deleting files so they are not locked
-    Exec('taskkill', '/F /IM WYSIWYG.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Exec('taskkill', '/F /IM WysiScan.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Exec('taskkill', '/F /IM XDevHubX.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM WYSIWYG.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM WysiScan.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM XDevHubX.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Sleep(1500); // Give the OS time to release file handles
   end;
 end;

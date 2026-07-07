@@ -327,9 +327,24 @@ async def view_requests_endpoint():
 async def run_installer_endpoint():
     try:
         if os.path.exists(INSTALLER_PATH):
-            os.startfile(INSTALLER_PATH)
+            import tempfile
+            bat_path = os.path.join(tempfile.gettempdir(), "update_wysiwyg.bat")
+            
+            # Write a batch file that kills the running processes and then launches the installer.
+            # This completely decouples the installer process from the parent process handle inheritance.
+            with open(bat_path, "w", encoding="utf-8") as f:
+                f.write(f'@echo off\n'
+                        f'timeout /t 1 /nobreak >nul\n'
+                        f'taskkill /F /IM WYSIWYG.exe\n'
+                        f'taskkill /F /IM WysiScan.exe\n'
+                        f'taskkill /F /IM XDevHubX.exe\n'
+                        f'timeout /t 1 /nobreak >nul\n'
+                        f'start "" "{INSTALLER_PATH}"\n'
+                        f'exit\n')
+            
+            os.startfile(bat_path)
             return {"status": "success"}
-        return JSONResponse(status_code=404, content={"status": "error", "message": "Installer not found"})
+        return JSONResponse(status_code=404, content={"status": "error", "message": f"Installer not found at {INSTALLER_PATH}"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
 
