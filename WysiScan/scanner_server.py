@@ -1694,6 +1694,105 @@ async def manage_files(data: dict = Body(...)):
             except Exception as e:
                 errors.append(f"Failed to delete {os.path.basename(file_path)}: {str(e)}")
                 
+    elif action == "rename":
+        new_name = data.get("new_name")
+        if not new_name:
+            return {"status": "error", "message": "No new name specified"}
+        
+        safe_new_name = "".join(c for c in new_name if c.isalnum() or c in ('-', '_')).rstrip()
+        if not safe_new_name:
+            return {"status": "error", "message": "Invalid new name"}
+
+        if len(files) == 1:
+            file_path = files[0]
+            if os.path.exists(file_path):
+                try:
+                    dir_name = os.path.dirname(file_path)
+                    _, ext = os.path.splitext(file_path)
+                    new_filename = f"{safe_new_name}{ext}"
+                    new_path = os.path.join(dir_name, new_filename)
+                    
+                    if os.path.abspath(file_path) == os.path.abspath(new_path):
+                        # Same file name, treat as no-op success
+                        success_count += 1
+                    elif os.path.exists(new_path):
+                        errors.append(f"Destination file already exists: {new_filename}")
+                    else:
+                        os.rename(file_path, new_path)
+                        
+                        for level in range(1, 10):
+                            old_bak = get_backup_path_in_temp(file_path, level)
+                            if os.path.exists(old_bak):
+                                new_bak = get_backup_path_in_temp(new_path, level)
+                                try:
+                                    if os.path.exists(new_bak):
+                                        os.remove(new_bak)
+                                    os.rename(old_bak, new_bak)
+                                except Exception as bak_err:
+                                    logging.error(f"Failed to rename backup {old_bak}: {bak_err}")
+                        
+                        old_redo = get_redo_path_in_temp(file_path)
+                        if os.path.exists(old_redo):
+                            new_redo = get_redo_path_in_temp(new_path)
+                            try:
+                                if os.path.exists(new_redo):
+                                    os.remove(new_redo)
+                                os.rename(old_redo, new_redo)
+                            except Exception as redo_err:
+                                logging.error(f"Failed to rename redo {old_redo}: {redo_err}")
+                        
+                        success_count += 1
+                except Exception as e:
+                    errors.append(f"Failed to rename {os.path.basename(file_path)}: {str(e)}")
+        else:
+            for file_path in files:
+                if os.path.exists(file_path):
+                    try:
+                        dir_name = os.path.dirname(file_path)
+                        name, ext = os.path.splitext(os.path.basename(file_path))
+                        
+                        parts = name.rsplit('_', 1)
+                        if len(parts) == 2 and parts[1].isdigit():
+                            number_suffix = f"_{parts[1]}"
+                        else:
+                            number_suffix = ""
+                            
+                        new_filename = f"{safe_new_name}{number_suffix}{ext}"
+                        new_path = os.path.join(dir_name, new_filename)
+                        
+                        if os.path.abspath(file_path) == os.path.abspath(new_path):
+                            # Same file name, treat as no-op success
+                            success_count += 1
+                        elif os.path.exists(new_path):
+                            errors.append(f"Destination file already exists: {new_filename}")
+                        else:
+                            os.rename(file_path, new_path)
+                            
+                            for level in range(1, 10):
+                                old_bak = get_backup_path_in_temp(file_path, level)
+                                if os.path.exists(old_bak):
+                                    new_bak = get_backup_path_in_temp(new_path, level)
+                                    try:
+                                        if os.path.exists(new_bak):
+                                            os.remove(new_bak)
+                                        os.rename(old_bak, new_bak)
+                                    except Exception as bak_err:
+                                        logging.error(f"Failed to rename backup {old_bak}: {bak_err}")
+                            
+                            old_redo = get_redo_path_in_temp(file_path)
+                            if os.path.exists(old_redo):
+                                new_redo = get_redo_path_in_temp(new_path)
+                                try:
+                                    if os.path.exists(new_redo):
+                                        os.remove(new_redo)
+                                    os.rename(old_redo, new_redo)
+                                except Exception as redo_err:
+                                    logging.error(f"Failed to rename redo {old_redo}: {redo_err}")
+                            
+                            success_count += 1
+                    except Exception as e:
+                        errors.append(f"Failed to rename {os.path.basename(file_path)}: {str(e)}")
+                        
     return {"status": "success", "processed": success_count, "errors": errors}
 
 @app.post("/open-folder")

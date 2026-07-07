@@ -77,7 +77,7 @@
         .gallery-item {
             display: flex;
             gap: 5px;
-            width: 250px;
+            width: 150px;
             border: 1px solid var(--border-color);
             padding: 5px;
         }
@@ -277,10 +277,13 @@
 </head>
 <body>
     <div class="container">
-        <div style="position: relative;">
-            <h1>WysiScan</h1>
-            <button onclick="toggleTheme()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); padding: 5px 10px; font-size: 12px; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color);">🌓 Theme</button>
-            <button onclick="openHelpModal()" style="position: absolute; right: 90px; top: 50%; transform: translateY(-50%); padding: 5px 10px; font-size: 12px; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color);">❓ Help</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+            <h1 style="margin: 0;">WysiScan</h1>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button onclick="openHelpModal()" style="padding: 5px 10px; font-size: 12px; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); border-radius: 4px; cursor: pointer;">❓ Hot Keys</button>
+                <button onclick="toggleTheme()" style="padding: 5px 10px; font-size: 12px; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); border-radius: 4px; cursor: pointer;">🌓 Theme</button>
+                <button onclick="exitApp()" style="background-color: #dc3545; color: white; padding: 5px 12px; font-size: 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">EXIT</button>
+            </div>
         </div>
         <p>Ensure your scanner is connected and drivers are installed.</p>
 
@@ -303,14 +306,12 @@
                 </div>
 
                 <div class="form-group" style="margin-bottom: 0;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
-                        <label for="groupName" style="font-weight: bold; margin-bottom: 0;">Group Name:</label>
-                        <button onclick="clearGroupAndUI()" title="Clear group name and reset UI" style="padding: 2px 6px; font-size: 11px; background-color: #dc3545; color: white; min-width: auto; margin-right: 0;">Clear</button>
-                    </div>
+                    <label for="groupName" style="font-weight: bold;">Group Name:</label>
                     <div class="input-group">
                         <input type="text" id="groupName" list="groupList" placeholder="Type new name, or select existing" autocomplete="off" style="width: 100%; box-sizing: border-box;" onkeydown="if (event.key === 'Enter') startOrResumeGroup();">
                         <datalist id="groupList"></datalist>
-                        <button id="newGroupBtn" onclick="startOrResumeGroup()" style="white-space: nowrap;">Start Group</button>
+                        <button id="newGroupBtn" onclick="startOrResumeGroup()" style="white-space: nowrap; margin-right: 0;">Start Group</button>
+                        <button onclick="clearGroupAndUI()" title="Clear group name and reset UI" style="white-space: nowrap; background-color: #dc3545; color: white; margin-right: 0;">Clear</button>
                     </div>
                 </div>
             </div>
@@ -401,13 +402,10 @@
             <div style="display: flex; align-items: center; gap: 12px; padding: 6px 10px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 4px; width: fit-content; font-size: 14px;">
                 <strong>Crop Mode:</strong>
                 <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio" name="mediaType" value="auto" checked onchange="handleCropModeChange()"> Auto</label>
-                <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio" name="mediaType" value="cd" onchange="handleCropModeChange()"> CD Matrix</label>
-                <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio" name="mediaType" value="tape" onchange="handleCropModeChange()"> Tape</label>
-                <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio" name="mediaType" value="lp" onchange="handleCropModeChange()"> LP</label>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio" name="mediaType" value="cd" onchange="handleCropModeChange()"> Custom1</label>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio" name="mediaType" value="tape" onchange="handleCropModeChange()"> Custom2</label>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="radio" name="mediaType" value="lp" onchange="handleCropModeChange()"> Custom3</label>
             </div>
-            
-            <span style="flex-grow: 1;"></span>
-            <button onclick="exitApp()" style="background-color: #dc3545; color: white; padding: 10px 20px; font-size: 16px; border: none; border-radius: 4px; margin-right: 0;">EXIT</button>
         </div>
 
         <div id="status" class="status"></div>
@@ -449,7 +447,7 @@
                             <button onclick="openCropper(document.getElementById('originalImg'))" title="Manual Crop">✂️</button>
                             <button onclick="openCropToReplace()" title="Crop Original to Replace Output">✂️➜</button>
                         </div>
-                        <img id="originalImg" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2NjYyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiPjwvY2lyY2xlPjxwb2x5bGluZSBwb2ludHM9IjIxIDE1IDE2IDEwIDUgMjEiPjwvcG9seWxpbmU+PC9zdmc+" alt="Original Scan will appear here" data-path="">
+                        <img id="originalImg" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMDAgMjAwIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBzdHlsZT0iYmFja2dyb3VuZDogIzFlMWUxZTsgYm9yZGVyOiAycHggZGFzaGVkICMzYTNhM2E7IGJvcmRlci1yYWRpdXM6IDhweDsiPiAgPHBhdGggZD0iTTEzNSA2NSBoMzAgYTUgNSAwIDAgMSA1IDUgdjM1IGE1IDUgMCAwIDEgLTUgNSBoLTMwIGE1IDUgMCAwIDEgLTUgLTUgdi0zNSBhNSA1IDAgMCAxIDUgLTUgeiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNTU1IiBzdHJva2Utd2lkdGg9IjMiLz4gIDxwYXRoIGQ9Ik0xMzggOTUgbDEwIC0xMCBsOCA4IGw4IC0xMiBsOCAxNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNTU1IiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPiAgPGNpcmNsZSBjeD0iMTQ2IiBjeT0iNzciIHI9IjMiIGZpbGw9IiM1NTUiLz4gIDx0ZXh0IHg9IjE1MCIgeT0iMTM1IiBmaWxsPSIjODg4IiBmb250LWZhbWlseT0iU2Vnb2UgVUksIFJvYm90bywgSGVsdmV0aWNhLCBBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9IjYwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U2NhbiBvciBJbXBvcnQgbm93PC90ZXh0Pjwvc3ZnPg==" alt="Original Scan will appear here" data-path="">
                     </div>
                     <div>
                         <h3>Last Scan (Cropped)</h3>
@@ -460,14 +458,14 @@
                             <button onclick="redoLastAction()" title="Redo Last Undo (Ctrl+Y)">↪️</button>
                             <button onclick="openCropper(document.getElementById('croppedImg'))" title="Manual Crop (Overwrite)">✂️</button>
                             <button onclick="openCropAsNew()" title="Crop From This Image as New">✂️+</button>
-                            <button onclick="resetCropToOriginal()" title="Reset to Full Original Scan" style="font-size: 12px; vertical-align: middle;">Full</button>
-                            <button type="button" onclick="openImageExternal(document.getElementById('croppedImg'))" title="Open in Default Application" style="font-size: 12px; vertical-align: middle;">Open Image</button>
                         </div>
                         <div id="croppedImgContainer" style="position: relative;">
-                            <img id="croppedImg" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2NjYyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiPjwvY2lyY2xlPjxwb2x5bGluZSBwb2ludHM9IjIxIDE1IDE2IDEwIDUgMjEiPjwvcG9seWybW5lPjwvc3ZnPg==" alt="Cropped version will appear here" data-path="">
+                            <img id="croppedImg" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMDAgMjAwIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBzdHlsZT0iYmFja2dyb3VuZDogIzFlMWUxZTsgYm9yZGVyOiAycHggZGFzaGVkICMzYTNhM2E7IGJvcmRlci1yYWRpdXM6IDhweDsiPiAgPHBhdGggZD0iTTEzNSA2NSBoMzAgYTUgNSAwIDAgMSA1IDUgdjM1IGE1IDUgMCAwIDEgLTUgNSBoLTMwIGE1IDUgMCAwIDEgLTUgLTUgdi0zNSBhNSA1IDAgMCAxIDUgLTUgeiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNTU1IiBzdHJva2Utd2lkdGg9IjMiLz4gIDxwYXRoIGQ9Ik0xMzggOTUgbDEwIC0xMCBsOCA4IGw4IC0xMiBsOCAxNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNTU1IiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPiAgPGNpcmNsZSBjeD0iMTQ2IiBjeT0iNzciIHI9IjMiIGZpbGw9IiM1NTUiLz4gIDx0ZXh0IHg9IjE1MCIgeT0iMTM1IiBmaWxsPSIjODg4IiBmb250LWZhbWlseT0iU2Vnb2UgVUksIFJvYm90bywgSGVsdmV0aWNhLCBBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9IjYwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U2NhbiBvciBJbXBvcnQgbm93PC90ZXh0Pjwvc3ZnPg==" alt="Cropped version will appear here" data-path="">
                         </div>
-                        <div style="margin-top: 10px;">
-                            <button onclick="saveCurrentCropped()" style="background-color: #28a745; width: 100%;">Save This Image</button>
+                        <div style="margin-top: 10px; display: flex; gap: 8px;">
+                            <button onclick="resetCropToOriginal()" title="Reset to Full Original Scan" style="flex: 1; margin-right: 0;">Full</button>
+                            <button type="button" onclick="openImageExternal(document.getElementById('croppedImg'))" title="Open in Default Application" style="flex: 1; margin-right: 0;">Open</button>
+                            <button onclick="saveCurrentCropped()" style="background-color: #28a745; flex: 1; margin-right: 0;">Save</button>
                         </div>
                     </div>
                 </div>
@@ -478,23 +476,21 @@
             </div>
             <div class="sidebar" style="flex: 1; border-left: 1px solid var(--border-color); padding-left: 20px; height: 75vh; display: flex; flex-direction: column;">
                 <div style="padding-bottom: 10px; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; flex-shrink: 0;">
-                    <h3 style="margin-top: 0; margin-bottom: 10px;">Group Actions</h3>
-                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        <button onclick="handleFiles('save')" style="background-color: #28a745; padding: 4px 8px; font-size: 12px;">Save Marked</button>
-                        <button onclick="handleFiles('delete')" style="background-color: #dc3545; padding: 4px 8px; font-size: 12px;">Delete Marked</button>
-                        <button onclick="openSaveFolder()" style="background-color: #17a2b8; padding: 4px 8px; font-size: 12px;">Open Folder</button>
-                    </div>
-                </div>
-                <div id="scan-gallery" style="overflow-y: auto; flex: 1; margin-top: 0;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; padding-bottom: 5px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <h2 style="margin: 0; padding: 0; border: none; background: none; color: var(--text-main); font-size: 1.5em;">Scan Group</h2>
-                            <button onclick="refreshGroupGallery()" title="Refresh Gallery" style="padding: 2px 6px; font-size: 14px; background-color: #6c757d; color: white; min-width: auto;">🔄</button>
-                        </div>
-                        <label style="font-size: 12px; cursor: pointer; user-select: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="margin: 0;">Group Actions</h3>
+                        <label style="font-size: 12px; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 5px;">
                             <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)"> Select All
                         </label>
                     </div>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap; align-items: center;">
+                        <button onclick="refreshGroupGallery()" title="Refresh Gallery" style="padding: 4px 8px; font-size: 12px; background-color: #6c757d; color: white; min-width: auto; margin-right: 0;">🔄</button>
+                        <button onclick="handleFiles('save')" title="Save Marked" style="background-color: #28a745; padding: 4px 8px; font-size: 12px; min-width: auto; margin-right: 0;">💾</button>
+                        <button onclick="openRenameModal()" title="Rename Marked" style="background-color: #ffc107; color: black; padding: 4px 8px; font-size: 12px; min-width: auto; margin-right: 0;">✏️</button>
+                        <button onclick="handleFiles('delete')" title="Delete Marked" style="background-color: #dc3545; padding: 4px 8px; font-size: 12px; min-width: auto; margin-right: 0;">🗑️</button>
+                        <button onclick="openSaveFolder()" title="Open Folder" style="background-color: #17a2b8; padding: 4px 8px; font-size: 12px; min-width: auto; margin-right: 0;">📂</button>
+                    </div>
+                </div>
+                <div id="scan-gallery" style="overflow-y: auto; flex: 1; margin-top: 0;">
                     <!-- Scanned items will be added here -->
                 </div>
             </div>
@@ -526,11 +522,6 @@
             <div id="hotkey-help-content" style="max-height: 400px; overflow-y: auto;">
                 <h4>Keyboard Shortcuts <span id="hotkey-capture-status" style="font-size: 0.8em; color: #007bff; margin-left: 10px;"></span></h4>
                 <ul id="hotkey-list"></ul>
-                <h4>Tips</h4>
-                <ul>
-                    <li>"Auto-Align" and "Auto-Crop" are applied automatically on scan, and also when you <strong>click an image in the Import Queue</strong>.</li>
-                    <li>"Recrop Last" is useful if you changed padding or rotated the original.</li>
-                </ul>
             </div>
             <div class="ocr-modal-footer">
                 <button onclick="closeHelpModal()">Close</button>
@@ -575,8 +566,25 @@
             </div>
         </div>
     </div>
+    <div id="renameModal" class="ocr-modal" style="width: 400px;">
+        <div class="ocr-modal-content">
+            <div class="ocr-modal-header">
+                <h3 style="margin: 0;" id="renameModalTitle">Rename Files</h3>
+                <button onclick="closeRenameModal()" class="close-btn" title="Close">&times;</button>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label for="newFileNameInput" style="font-weight: bold; display: block; margin-bottom: 5px;" id="renameModalLabel">New Name:</label>
+                <input type="text" id="newFileNameInput" style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); border-radius: 4px;" onkeydown="if (event.key === 'Enter') submitRename();">
+            </div>
+            <div class="ocr-modal-footer">
+                <button onclick="closeRenameModal()" style="padding: 6px 12px; font-size: 14px; background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); border-radius: 4px; cursor: pointer; margin-right: 5px;">Cancel</button>
+                <button onclick="submitRename()" style="padding: 6px 12px; font-size: 14px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 0;">Rename</button>
+            </div>
+        </div>
+    </div>
 
     <script>
+        const PLACEHOLDER_SVG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMDAgMjAwIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBzdHlsZT0iYmFja2dyb3VuZDogIzFlMWUxZTsgYm9yZGVyOiAycHggZGFzaGVkICMzYTNhM2E7IGJvcmRlci1yYWRpdXM6IDhweDsiPiAgPHBhdGggZD0iTTEzNSA2NSBoMzAgYTUgNSAwIDAgMSA1IDUgdjM1IGE1IDUgMCAwIDEgLTUgNSBoLTMwIGE1IDUgMCAwIDEgLTUgLTUgdi0zNSBhNSA1IDAgMCAxIDUgLTUgeiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNTU1IiBzdHJva2Utd2lkdGg9IjMiLz4gIDxwYXRoIGQ9Ik0xMzggOTUgbDEwIC0xMCBsOCA4IGw4IC0xMiBsOCAxNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNTU1IiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPiAgPGNpcmNsZSBjeD0iMTQ2IiBjeT0iNzciIHI9IjMiIGZpbGw9IiM1NTUiLz4gIDx0ZXh0IHg9IjE1MCIgeT0iMTM1IiBmaWxsPSIjODg4IiBmb250LWZhbWlseT0iU2Vnb2UgVUksIFJvYm90bywgSGVsdmV0aWNhLCBBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9IjYwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U2NhbiBvciBJbXBvcnQgbm93PC90ZXh0Pjwvc3ZnPg==";
         let scanCounter = 0;
         let groupStarted = false;
         let lastOriginalPath = '';
@@ -675,21 +683,11 @@
             document.getElementById('groupName').value = '';
             document.getElementById('groupName').focus();
 
-            // Reset gallery
-            document.getElementById('scan-gallery').innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; padding-bottom: 5px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <h2 style="margin: 0; padding: 0; border: none; background: none; color: var(--text-main); font-size: 1.5em;">Scan Group</h2>
-                        <button onclick="refreshGroupGallery()" title="Refresh Gallery" style="padding: 2px 6px; font-size: 14px; background-color: #6c757d; color: white; min-width: auto;">🔄</button>
-                    </div>
-                    <label style="font-size: 12px; cursor: pointer; user-select: none;">
-                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)"> Select All
-                    </label>
-                </div>
-            `;
+            document.getElementById('scan-gallery').innerHTML = '';
+            document.getElementById('selectAllCheckbox').checked = false;
 
             // Reset main previews
-            const placeholderSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2NjYyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiPjwvY2lyY2xlPjxwb2x5bGluZSBwb2ludHM9IjIxIDE1IDE2IDEwIDUgMjEiPjwvcG9seWxpbmU+PC9zdmc+";
+            const placeholderSvg = PLACEHOLDER_SVG;
             const originalImg = document.getElementById('originalImg');
             const croppedImg = document.getElementById('croppedImg');
             originalImg.src = placeholderSvg;
@@ -728,22 +726,35 @@
             await startOrResumeGroup();
         }
 
+        function updateActionButtonsState() {
+            const currentInput = document.getElementById('groupName').value.trim();
+            const groupMatches = groupStarted && (currentInput === currentGroupName);
+            
+            document.getElementById('addToGroupBtn').disabled = !groupMatches;
+            document.getElementById('importBtn').disabled = !groupMatches;
+            
+            updateCropButtonsState();
+        }
+
         function setButtonsDisabled(disabled) {
             document.getElementById('newGroupBtn').disabled = disabled;
-            document.getElementById('addToGroupBtn').disabled = disabled;
-            document.getElementById('importBtn').disabled = disabled;
             
             if (disabled) {
+                document.getElementById('addToGroupBtn').disabled = true;
+                document.getElementById('importBtn').disabled = true;
                 document.getElementById('recropBtn').disabled = true;
                 document.getElementById('revertCropBtn').disabled = true;
             } else {
-                updateCropButtonsState();
+                updateActionButtonsState();
             }
         }
 
         function updateCropButtonsState() {
-            document.getElementById('recropBtn').disabled = !lastCroppedPath;
-            document.getElementById('revertCropBtn').disabled = !lastOriginalPath;
+            const currentInput = document.getElementById('groupName').value.trim();
+            const groupMatches = groupStarted && (currentInput === currentGroupName);
+            
+            document.getElementById('recropBtn').disabled = !groupMatches || !lastCroppedPath;
+            document.getElementById('revertCropBtn').disabled = !groupMatches || !lastOriginalPath;
         }
 
         async function fetchGroups() {
@@ -789,23 +800,12 @@
 
             // Reset UI first
             groupStarted = true;
-            document.getElementById('scan-gallery').innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; padding-bottom: 5px; flex-wrap: wrap;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <h2 style="margin: 0; padding: 0; border: none; background: none; color: var(--text-main); font-size: 1.5em;">Scan Group</h2>
-                        <button onclick="refreshGroupGallery()" title="Refresh Gallery" style="padding: 2px 6px; font-size: 14px; background-color: #6c757d; color: white; min-width: auto;">🔄</button>
-                    </div>
-                    <label style="font-size: 12px; cursor: pointer; user-select: none;">
-                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)"> Select All
-                    </label>
-                </div>
-            `; // Reset gallery
-            updateCropButtonsState();
-            const placeholderSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2NjYyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiPjwvY2lyY2xlPjxwb2x5bGluZSBwb2ludHM9IjIxIDE1IDE2IDEwIDUgMjEiPjwvcG9seWxpbmU+PC9zdmc+";
+            document.getElementById('scan-gallery').innerHTML = ''; // Reset gallery
+            document.getElementById('selectAllCheckbox').checked = false;
+            const placeholderSvg = PLACEHOLDER_SVG;
             document.getElementById('originalImg').src = placeholderSvg;
             document.getElementById('croppedImg').src = placeholderSvg;
-            document.getElementById('addToGroupBtn').disabled = false;
-            document.getElementById('importBtn').disabled = false;
+            updateActionButtonsState();
             const queueContainer = document.getElementById('import-queue-container');
             // Clear import queue images
             if (queueContainer) {
@@ -917,9 +917,7 @@
                     if (browseData.status !== 'cancelled') {
                         showToast("Error selecting file: " + (browseData.message || "No files selected."), "error")
                     }
-                    // If browsing is cancelled or fails, re-enable buttons and exit.
                     setButtonsDisabled(false);
-                    document.getElementById('addToGroupBtn').disabled = !groupStarted;
                     importBtn.innerText = "Import";
                     return;
                 }
@@ -1107,7 +1105,7 @@
         function loadIntoMainView(originalSrc, croppedSrc, originalPath, croppedPath) {
             const originalImg = document.getElementById('originalImg');
             const croppedImg = document.getElementById('croppedImg');
-            const placeholderSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2NjYyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiPjwvY2lyY2xlPjxwb2x5bGluZSBwb2ludHM9IjIxIDE1IDE2IDEwIDUgMjEiPjwvcG9seWxpbmU+PC9zdmc+";
+            const placeholderSvg = PLACEHOLDER_SVG;
             
             lastOriginalPath = originalPath || "";
             if (originalPath) {
@@ -1150,13 +1148,15 @@
 
             itemDiv.innerHTML = `
                 <div style="width: 100%;">
-                    <h4>Cropped #${itemNumber} <input type="checkbox" class="file-checkbox" value="${croppedPath}" onchange="updateSelectAllState()"></h4>
+                    <h4 style="font-size: 12px; word-break: break-all; margin: 0 0 5px 0; display: flex; align-items: center; gap: 5px;">
+                        <input type="checkbox" class="file-checkbox" value="${croppedPath}" onchange="updateSelectAllState()" style="margin: 0; cursor: pointer;">
+                        <span>${croppedName}</span>
+                    </h4>
                     <div class="image-controls">
                         <button onclick="rotateImage(document.getElementById('${croppedImgId}'), 'left')" title="Rotate Left 90°">⟲</button>
                         <button onclick="rotateImage(document.getElementById('${croppedImgId}'), 'right')" title="Rotate Right 90°">⟳</button>
                     </div>
                     <img id="${croppedImgId}" src="${croppedSrc}" alt="Cropped Scan ${itemNumber}" data-path="${croppedPath}" style="cursor: pointer;" title="Click to edit in main view">
-                    <div style="font-size: 11px; color: #666; margin-top: 5px; word-break: break-all;">${croppedName}</div>
                 </div>
             `;
             
@@ -1212,40 +1212,14 @@
             // Set image source. The `onload` event will handle the rest.
             image.src = `${imgElement.src.split('&v=')[0].split('&t=')[0]}&v=${new Date().getTime()}`;
 
-            image.onload = async () => {
-                let cropData = null;
-                // Only run detection on the original image to get the main subject.
-                // Cropping an already cropped image should start with the full view of that crop.
-                if (imgElement.id === 'originalImg') {
-                    try {
-                        const response = await fetch('/detect-bounds', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ path: imagePath })
-                        });
-                        const data = await response.json();
-                        if (data.status === 'success' && data.crop_data) {
-                            cropData = data.crop_data;
-                        }
-                    } catch (e) {
-                        console.error("Bounds detection failed:", e);
-                    }
-                }
-
+            image.onload = () => {
                 cropper = new Cropper(image, {
                     viewMode: 1,
                     background: false,
-                    autoCropArea: cropData ? 1 : 0.8, // If we have data, don't auto-crop with an 80% box
-                    data: cropData, // This sets the initial crop box
+                    autoCrop: false, // Start with no selection box
                     zoomOnWheel: true,
                     ready: function() {
-                        if (cropData) {
-                            // If we auto-detected bounds, zoom to them.
-                            autoFocusSelection();
-                        } else if (document.getElementById('autoFocusCrop').checked) {
-                            // Otherwise, respect the user's auto-focus preference for manual selections.
-                            autoFocusSelection();
-                        }
+                        // Opened with a clean canvas, no auto crop box
                     },
                     cropend: function() {
                         if (document.getElementById('autoFocusCrop').checked) {
@@ -1646,6 +1620,104 @@
             }
         }
 
+        let filesToRename = [];
+
+        function openRenameModal() {
+            const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+            filesToRename = Array.from(checkboxes).map(cb => cb.value);
+
+            if (filesToRename.length === 0) {
+                showToast("No files selected.", "warn");
+                return;
+            }
+
+            const modal = document.getElementById('renameModal');
+            const input = document.getElementById('newFileNameInput');
+            const title = document.getElementById('renameModalTitle');
+            const label = document.getElementById('renameModalLabel');
+
+            if (filesToRename.length === 1) {
+                title.innerText = "Rename File";
+                label.innerText = "Enter new filename:";
+                const filePath = filesToRename[0];
+                const baseName = filePath.substring(Math.max(filePath.lastIndexOf('\\'), filePath.lastIndexOf('/')) + 1);
+                const nameWithoutExt = baseName.substring(0, baseName.lastIndexOf('.')) || baseName;
+                input.value = nameWithoutExt;
+            } else {
+                title.innerText = "Rename Group Files";
+                label.innerText = "Enter new group name (keeps _1, _2 suffixes):";
+                input.value = currentGroupName;
+            }
+
+            modal.style.display = 'block';
+            input.focus();
+            input.select();
+        }
+
+        function closeRenameModal() {
+            document.getElementById('renameModal').style.display = 'none';
+            filesToRename = [];
+        }
+
+        async function submitRename() {
+            const newName = document.getElementById('newFileNameInput').value.trim();
+            if (!newName) {
+                showToast("Name cannot be empty.", "warn");
+                return;
+            }
+
+            const safeNewName = newName.replace(/[^a-zA-Z0-9\-_]/g, '');
+            if (!safeNewName) {
+                showToast("Invalid characters in name.", "warn");
+                return;
+            }
+
+            const saveLocation = document.getElementById('saveLocation').value.trim();
+
+            try {
+                const response = await fetch('/manage-files', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'rename',
+                        files: filesToRename,
+                        new_name: safeNewName,
+                        save_location: saveLocation
+                    })
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    if (data.errors && data.errors.length > 0) {
+                        showToast("Some files failed to rename: " + data.errors.join(", "), "warn");
+                    } else {
+                        showToast(`Successfully renamed ${data.processed} files.`, "success");
+                    }
+                    
+                    let targetGroupName = safeNewName;
+                    const lastUnderscore = safeNewName.lastIndexOf('_');
+                    if (lastUnderscore !== -1) {
+                        const suffix = safeNewName.substring(lastUnderscore + 1);
+                        if (suffix && !isNaN(suffix) && suffix.trim() !== "") {
+                            targetGroupName = safeNewName.substring(0, lastUnderscore);
+                        }
+                    }
+
+                    if (filesToRename.length > 1 || (filesToRename.length === 1 && targetGroupName !== safeNewName)) {
+                        currentGroupName = targetGroupName;
+                        document.getElementById('groupName').value = targetGroupName;
+                    }
+                    
+                    closeRenameModal();
+                    await startOrResumeGroup();
+                } else {
+                    showToast("Error renaming files: " + (data.message || "Unknown error"), "error");
+                }
+            } catch (e) {
+                showToast("Network error while renaming: " + e, "error");
+            }
+        }
+
         async function saveCurrentCropped() {
             const img = document.getElementById('croppedImg');
             if (!img || !img.dataset.path) {
@@ -1972,11 +2044,13 @@
             });
         });
 
-        // Auto-load group when selected from datalist
+        // Auto-load group when selected from datalist or disable action buttons if manually modified
         document.getElementById('groupName').addEventListener('input', function(event) {
-            const selectedGroup = event.target.value;
+            const selectedGroup = event.target.value.trim();
             if (knownGroups[selectedGroup] !== undefined) {
                 startOrResumeGroup();
+            } else {
+                updateActionButtonsState();
             }
         });
 

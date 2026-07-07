@@ -4,6 +4,7 @@ import pyperclip
 
 def format_discogs_to_html(raw_text):
     lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
+    lines = [line for line in lines if "scraped via master release" not in line.lower()]
     if not lines: return "No text provided."
 
     # --- Header with Color Logic ---

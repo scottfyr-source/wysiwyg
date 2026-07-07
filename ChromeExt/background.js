@@ -26,11 +26,25 @@ chrome.runtime.onInstalled.addListener(() => {
             "*://*.discogs.com/master/*"
         ]
     });
+
+    chrome.contextMenus.create({
+        id: "sendToWysiwygPage",
+        title: "Send Page to WYSIWYG Scraper",
+        contexts: ["page"],
+        documentUrlPatterns: [
+            "*://*.discogs.com/release/*",
+            "*://*.discogs.com/master/*"
+        ]
+    });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId === "sendToWysiwyg" && info.linkUrl) {
-        const targetUrl = info.linkUrl;
+    const isLinkScrape = info.menuItemId === "sendToWysiwyg" && info.linkUrl;
+    const isPageScrape = info.menuItemId === "sendToWysiwygPage";
+
+    if (isLinkScrape || isPageScrape) {
+        const targetUrl = isPageScrape ? (info.pageUrl || tab.url) : info.linkUrl;
+        if (!targetUrl) return;
 
         // Helper to inject the script
         const runScript = (tabId) => {
