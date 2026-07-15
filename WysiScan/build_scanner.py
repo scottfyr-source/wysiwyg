@@ -7,9 +7,9 @@ def build_exe():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(base_dir)
 
-    script_name = "scanner_server.py"
+    script_name = os.path.join(base_dir, "scanner_server.py")
     exe_name = "WysiScan"
-    icon_path = "WysiScan.ico"
+    icon_path = os.path.join(base_dir, "WysiScan.ico")
 
     # Define assets to bundle (source, destination inside EXE)
     # We place them in a 'WysiScan' folder inside the EXE to match scanner_server.py's ASSET_DIR logic
@@ -30,8 +30,9 @@ def build_exe():
 
     # Add assets
     for src, dst in assets:
-        if os.path.exists(os.path.join(base_dir, src)):
-            params.append(f"--add-data={src}{os.pathsep}{dst}")
+        full_src = os.path.join(base_dir, src)
+        if os.path.exists(full_src):
+            params.append(f"--add-data={full_src}{os.pathsep}{dst}")
 
     PyInstaller.__main__.run(params)
 

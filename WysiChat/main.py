@@ -20,6 +20,19 @@ import re
 
 import FreeSimpleGUI as sg 
 
+# Wrap FreeSimpleGUI popups to always keep on top to prevent window lockups
+def wrap_popup(func):
+    def wrapper(*args, **kwargs):
+        kwargs.setdefault('keep_on_top', True)
+        return func(*args, **kwargs)
+    return wrapper
+
+sg.popup = wrap_popup(sg.popup)
+sg.popup_yes_no = wrap_popup(sg.popup_yes_no)
+sg.popup_error = wrap_popup(sg.popup_error)
+sg.popup_get_text = wrap_popup(sg.popup_get_text)
+sg.popup_scrolled = wrap_popup(sg.popup_scrolled)
+
 # --- ARGUMENTS & SETTINGS SETUP ---
 # Moved up so we can use 'args.name' for the settings filename immediately
 parser = argparse.ArgumentParser()
@@ -81,20 +94,27 @@ def resource_path(relative_path):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
 
+# --- RESOLVE FYRTOOLS ROOT ---
 def resolve_fyrtools_root():
+    r"""
+    Scans the local storage layout and network topology to map the active root path.
+    Prioritizes the physical host drive 'C:\FYRShare' to minimize loopback and permission 
+    latency when running locally on the GREENLANTERN central node.
+    """
     possible_roots = [
-        r"Z:\Tools\FYRTools",
-        r"\\192.168.0.108\SupergirlNew\Tools\FYRTools",
-        r"C:\Supergirl\Tools\FYRTools"
+        r"C:\FYRShare\Tools\FYRTools",                       # Central host local drive mapping (Prioritized)
+        r"Z:\Tools\FYRTools",                                 # Standard client network drive shortcut (Store/Warehouse)
+        r"\\192.168.0.108\FYRShare\Tools\FYRTools"            # Universal UNC network share path fallback
     ]
     for root in possible_roots:
         if os.path.exists(root):
             return root
-    # Fallback to the original default
+    # Dynamic runtime fallback if the drive letter or network path is temporarily inaccessible
     return r"Z:\Tools\FYRTools"
 
 FYRTOOLS_ROOT = resolve_fyrtools_root()
-SHARED_PATH = os.path.join(FYRTOOLS_ROOT, "Wysichat")
+# Standardized base path for Wysichat network assets
+SHARED_PATH = os.path.join(FYRTOOLS_ROOT, "WysiChat")
 
 
 # --- SETTINGS & PERSISTENCE ---
@@ -127,18 +147,39 @@ def init_db():
     conn.commit()
     conn.close()
 
+# --- PRESENCE PROTOCOL (ANNOUNCE SELF) ---
 def announce_self(alias, status="Online"):
-    """Writes a small file to the shared drive so others can find you."""
+    """
+    Registers client availability metadata on the shared network layout.
+    Differentiates host configurations by name (GREENLANTERN) or local drive profile
+    to circumvent Windows Loopback connection restrictions, enforcing the correct host IP.
+    """
     contact_path = os.path.join(SHARED_PATH, "Contacts")
     try:
         if not os.path.exists(contact_path):
             os.makedirs(contact_path)
     
-        my_ip = socket.gethostbyname(socket.gethostname())
+        # Environmental Auto-Detection
+        hostname = socket.gethostname()
+        if hostname.upper() == "GREENLANTERN" or os.path.exists(r"C:\FYRShare\Tools\FYRTools"):
+            # Explicit central node network identity override
+            my_ip = "192.168.0.108"
+        else:
+            # Resolve dynamic local LAN interface profile for clients
+            my_ip = socket.gethostbyname(hostname)
+            if my_ip == "127.0.0.1":
+                # Fallback handler if system registers loopback as its primary interface address
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                try:
+                    s.connect(("8.8.8.8", 80))
+                    my_ip = s.getsockname()[0]
+                finally:
+                    s.close()
+
         with open(os.path.join(contact_path, f"{alias}.contact"), "w") as f:
             f.write(f"{my_ip}:{PORT}|{status}")
             
-        # Remove offline marker if it exists
+        # Flush the matching offline flag payload if found in storage layers
         offline_path = os.path.join(contact_path, f"{alias}.offline")
         if os.path.exists(offline_path):
             os.remove(offline_path)
@@ -257,23 +298,29 @@ def flash_window(window):
         except Exception:
             pass
 
+# --- NON-BLOCKING UI ACTIONS (SHAKE WINDOW) ---
 def shake_window(window):
-    """Shakes the window to get attention (Nudge)."""
+    """
+    Executes a visual alert sequence (Nudge) by shifting the display coordinates.
+    Spawns inside an isolated worker thread to decouple redraw overhead from the primary 
+    GUI loop, preventing frame stutters on integrated GPU hardware.
+    """
     if not window.TKroot or window.TKroot.state() == 'iconic':
         return
     
-    try:
-        x, y = window.current_location()
-        for _ in range(3):
-            window.move(x + 10, y)
-            window.refresh()
-            time.sleep(0.05)
-            window.move(x - 10, y)
-            window.refresh()
-            time.sleep(0.05)
-        window.move(x, y)
-    except:
-        pass
+    def _shake():
+        try:
+            x, y = window.current_location()
+            for _ in range(3):
+                window.TKroot.geometry(f"+{x + 10}+{y}")
+                time.sleep(0.04)
+                window.TKroot.geometry(f"+{x - 10}+{y}")
+                time.sleep(0.04)
+            window.TKroot.geometry(f"+{x}+{y}")
+        except:
+            pass
+            
+    threading.Thread(target=_shake, daemon=True).start()
 
 # --- NETWORKING & QUEUE ---
 def open_url(event):
@@ -290,10 +337,62 @@ def open_url(event):
                 end = ranges[i+1]
                 if widget.compare(start, "<=", index) and widget.compare(end, ">", index):
                     url = widget.get(start, end)
-                    webbrowser.open(url)
+                    if url.startswith("file:///"):
+                        import urllib.parse
+                        local_path = urllib.parse.unquote(url[8:]).replace("/", "\\")
+                        os.startfile(local_path)
+                    else:
+                        webbrowser.open(url)
                     break
     except Exception as e:
         logging.error(f"URL Open Error: {e}")
+
+def on_chat_right_click(event):
+    """Custom right-click menu for the chat window to copy hyperlinks and text."""
+    try:
+        import tkinter as tk
+        widget = event.widget
+        index = widget.index(f"@{event.x},{event.y}")
+        tags = widget.tag_names(index)
+        
+        menu = tk.Menu(widget, tearoff=0)
+        
+        if "URL" in tags:
+            ranges = widget.tag_ranges("URL")
+            for i in range(0, len(ranges), 2):
+                start = ranges[i]
+                end = ranges[i+1]
+                if widget.compare(start, "<=", index) and widget.compare(end, ">", index):
+                    url = widget.get(start, end)
+                    def copy_link(u=url):
+                        widget.clipboard_clear()
+                        widget.clipboard_append(u)
+                    menu.add_command(label="Copy Link", command=copy_link)
+                    break
+        
+        def copy_selection():
+            try:
+                text = widget.selection_get()
+                widget.clipboard_clear()
+                widget.clipboard_append(text)
+            except:
+                pass
+                
+        def paste_selection():
+            try:
+                if widget['state'] == 'normal':
+                    text = widget.clipboard_get()
+                    widget.insert('insert', text)
+            except:
+                pass
+
+        menu.add_command(label="Copy", command=copy_selection)
+        menu.add_command(label="Paste", command=paste_selection)
+        
+        menu.post(event.x_root, event.y_root)
+    except Exception as e:
+        logging.error(f"Chat Right Click Error: {e}")
+    return "break"
 
 def print_chat_message(window, text, color, font):
     """Appends a message to the chat window with hyperlink detection."""
@@ -305,9 +404,22 @@ def print_chat_message(window, text, color, font):
         style_tag = f"style_{str(color).replace('#','').replace(' ','')}_{font[1]}"
         widget.tag_config(style_tag, foreground=color, font=font)
         
-        parts = re.split(r'(https?://\S+)', text)
+        # Detect [FILE] tag and convert to file:/// URL
+        if "[FILE] " in text:
+            parts_file = text.split("[FILE] ", 1)
+            prefix = parts_file[0]
+            new_name = parts_file[1].strip()
+            
+            # Form the full file path and quoted URL
+            full_path = os.path.abspath(os.path.join(SHARED_PATH, "Attachments", new_name))
+            import urllib.parse
+            quoted_path = urllib.parse.quote(full_path.replace("\\", "/")).replace("%3A", ":").replace("%2F", "/")
+            file_url = "file:///" + quoted_path
+            text = f"{prefix}Sent file: {file_url}"
+
+        parts = re.split(r'(https?://\S+|file:///\S+)', text)
         for part in parts:
-            if re.match(r'https?://\S+', part):
+            if re.match(r'(https?://\S+|file:///\S+)', part):
                 widget.insert("end", part, (style_tag, "URL"))
             else:
                 widget.insert("end", part, style_tag)
@@ -479,7 +591,7 @@ def view_history():
         [sg.Button('Delete Selected'), sg.Button('Delete All'), sg.Button('Close')]
     ]
     
-    win = sg.Window("Message History", layout, size=(900, 500), modal=True)
+    win = sg.Window("Message History", layout, size=(900, 500), modal=True, keep_on_top=True)
     
     while True:
         event, values = win.read()
@@ -511,17 +623,7 @@ def view_history():
                 
     win.close()
 
-def debug_db_dump():
-    """Helper to show raw DB contents to verify saving works."""
-    try:
-        conn = sqlite3.connect(DB_FILE)
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM messages")
-        rows = cur.fetchall()
-        conn.close()
-        sg.popup_scrolled(f"Database File: {DB_FILE}\n\nRaw Dump:\n" + "\n".join([str(r) for r in rows]), title="DB Debug", size=(100, 30))
-    except Exception as e:
-        sg.popup_error(f"DB Error: {e}")
+
 
 def create_alert_icon(path):
     """Generates a simple red dot icon if the file is missing."""
@@ -562,15 +664,6 @@ def get_admin_password():
 
 def admin_panel(known_contacts):
     """Admin screen to manage groups."""
-    target_pw = get_admin_password()
-    if not target_pw:
-        sg.popup_error("Admin configuration file (.env) is missing.")
-        return
-
-    password = sg.popup_get_text("Enter Admin Password:", password_char='*', title="Admin Access")
-    if password != target_pw:
-        sg.popup_error("Incorrect Password")
-        return
     
     # Handle both dict (online) and list (merged) inputs
     if isinstance(known_contacts, dict):
@@ -591,13 +684,10 @@ def admin_panel(known_contacts):
         [sg.Button("Save Group", bind_return_key=True), sg.Button("Delete Group"), sg.Button("Close")],
         [sg.HorizontalSeparator()],
         [sg.Text("Existing Groups:")],
-        [sg.Listbox(get_group_list_display(), size=(30, 5), key='-GROUPS-', enable_events=True)],
-        [sg.HorizontalSeparator()],
-        [sg.Text("Admin Settings", font=("Bold", 12))],
-        [sg.Text("New Password:"), sg.Input(key='-NEWPW-', size=(20,1), password_char='*'), sg.Button("Update Password")]
+        [sg.Listbox(get_group_list_display(), size=(30, 5), key='-GROUPS-', enable_events=True)]
     ]
     
-    win = sg.Window("Admin Panel", layout, modal=True, finalize=True)
+    win = sg.Window("Admin Panel", layout, modal=True, finalize=True, keep_on_top=True)
     win['-GNAME-'].set_focus()
 
     while True:
@@ -696,17 +786,14 @@ def get_menu_def(size):
     def check(val, curr):
         return f'!{val}' if str(val).lower() == str(curr).lower() else val
 
-    # Check for admin password file to enable/disable menu
     admin_opt = 'Manage Groups'
-    if not get_admin_password():
-        admin_opt = '!Manage Groups'
 
     return [
         ['File', ['Minimize to Tray', 'Open Shared Files', 'Switch User', 'Exit']],
         ['Settings', ['Sent Color', 'Recv Color', 'App Theme Color',
                       'Font Size', [check(x, size) for x in size_opts]]],
-        ['History', ['View History', 'Debug Database', 'Clear View']],
-        ['Admin', [admin_opt]],
+        ['History', ['View History', 'Clear View']],
+        ['Groups', [admin_opt]],
         ['Contacts', ['Refresh Contacts']]
     ]
 
@@ -723,6 +810,28 @@ def restart_application():
     except Exception as e:
         logging.error(f"Restart failed: {e}")
         sys.exit()
+
+def launch_wysiwyg():
+    """Launches the main Wysiwyg web server application."""
+    exe_path = r"C:\FYRTOOLS\WYSIWYG\WYSIWYG.exe"
+    if os.path.exists(exe_path):
+        try:
+            subprocess.Popen(exe_path, cwd=os.path.dirname(exe_path))
+            return True
+        except Exception as e:
+            logging.error(f"Failed to launch Wysiwyg EXE: {e}")
+            
+    # Dev mode fallback: look for main.py in the parent directory
+    dev_script = os.path.abspath(os.path.join(script_dir, "..", "main.py"))
+    if os.path.exists(dev_script):
+        try:
+            # Run using the current virtual environment's python interpreter
+            subprocess.Popen([sys.executable, dev_script], cwd=os.path.dirname(dev_script))
+            return True
+        except Exception as e:
+            logging.error(f"Failed to launch Wysiwyg script: {e}")
+            
+    return False
 
 # --- MAIN LOOP ---
 def main():
@@ -846,7 +955,7 @@ def main():
     win_loc = sg.user_settings_get_entry('-WIN-LOC-', None)
     win_size = sg.user_settings_get_entry('-WIN-SIZE-', None)
     
-    window = sg.Window("WysiChat", layout, finalize=True, icon=window_icon_path, resizable=True, use_custom_titlebar=use_custom_title, enable_close_attempted_event=True, location=win_loc, size=win_size)
+    window = sg.Window("WysiChat", layout, finalize=True, icon=window_icon_path, resizable=True, use_custom_titlebar=use_custom_title, enable_close_attempted_event=True, location=win_loc if win_loc else (None, None), size=win_size if win_size else (None, None), keep_on_top=True)
     window.TKroot.bind('<Enter>', lambda e: window.bring_to_front())
     window['-IN-'].bind('<Button-1>', 'ResetUnread')
     window['-CHAT-'].bind('<Button-1>', 'ResetUnread')
@@ -855,8 +964,37 @@ def main():
     chat_widget = window["-CHAT-"].Widget
     chat_widget.tag_config("URL", foreground="blue", underline=True)
     chat_widget.tag_bind("URL", "<Button-1>", open_url)
+    chat_widget.tag_bind("URL", "<Button-2>", open_url)
     chat_widget.tag_bind("URL", "<Enter>", lambda e: chat_widget.config(cursor="hand2"))
     chat_widget.tag_bind("URL", "<Leave>", lambda e: chat_widget.config(cursor=""))
+    chat_widget.bind("<Button-3>", on_chat_right_click)
+
+    # Configure grid weights recursively up the hierarchy to support expansion when maximized or resized
+    try:
+        def enable_expansion(widget, expand_x=True, expand_y=True):
+            curr = widget
+            while curr and curr != window.TKroot:
+                parent = curr.master
+                if parent:
+                    try:
+                        info = curr.grid_info()
+                        if info:
+                            if expand_y:
+                                row = int(info.get('row', 0))
+                                parent.rowconfigure(row, weight=1)
+                            if expand_x:
+                                col = int(info.get('column', 0))
+                                parent.columnconfigure(col, weight=1)
+                    except:
+                        pass
+                curr = parent
+
+        # Contacts column: expand vertically only
+        enable_expansion(window["-USERS-"].Widget, expand_x=False, expand_y=True)
+        # Chat column: expand both horizontally and vertically
+        enable_expansion(window["-CHAT-"].Widget, expand_x=True, expand_y=True)
+    except Exception as e:
+        logging.error(f"Error configuring resize weights: {e}")
 
 
     # Auto-refresh the list immediately after window creation
@@ -1103,12 +1241,9 @@ def main():
             save_loc()
             break
         if tray_event == 'Run Wysiwyg':
-            try:
-                exe_path = r"C:\FYRTOOLS\WYSIWYG\WYSIWYG.exe"
-                work_dir = os.path.dirname(exe_path)
-                subprocess.Popen(exe_path, cwd=work_dir)
-            except Exception as e:
-                logging.error(f"Failed to launch Wysiwyg: {e}")
+            launch_wysiwyg()
+
+
 
         if tray_event == 'Update Apps':
             layout = [
@@ -1151,6 +1286,7 @@ def main():
 
         if tray_event in ('Restore', '-TRAY-IMG-_DOUBLE'):
             window.un_hide()
+            window.keep_on_top_set()
             window.bring_to_front()
             tray_window.hide()
             
@@ -1383,8 +1519,7 @@ def main():
 
         if event == "View History":
             view_history()
-        if event == "Debug Database":
-            debug_db_dump()
+
 
         if event == 'Copy':
             try:
@@ -1412,4 +1547,13 @@ def main():
     window.close()
 
 if __name__ == "__main__":
+    # Prevent multiple instances of WysiChat
+    if sys.platform == "win32":
+        import ctypes
+        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+        global _wysichat_instance_mutex
+        _wysichat_instance_mutex = kernel32.CreateMutexW(None, False, "Local\\WYSICHAT_SINGLE_INSTANCE_MUTEX")
+        last_error = ctypes.get_last_error()
+        if last_error in (5, 183):  # ERROR_ACCESS_DENIED or ERROR_ALREADY_EXISTS
+            sys.exit(0)
     main()

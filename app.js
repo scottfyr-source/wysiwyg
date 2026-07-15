@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAppVersion();
     loadProfile();
     loadMediaFormats();
+    loadCounterButtonsConfig();
     loadCounters();
     loadVariableConditions(); // Load saved persistent conditions
     setupSaveConditionsButton(); // Create save button and enable if admin file is present
@@ -41,6 +42,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (walmartDockPref === 'true' && document.getElementById('dockWalmartSheet')) {
         document.getElementById('dockWalmartSheet').checked = true;
     }
+
+    // Initialize Auto Generate Preference
+    const autoGenPref = localStorage.getItem('wysiwyg_auto_generate');
+    if (autoGenPref !== null && document.getElementById('autoGenerateToggle')) {
+        document.getElementById('autoGenerateToggle').checked = autoGenPref === 'true';
+    }
 });
 
 function setupEventListeners() {
@@ -60,16 +67,17 @@ function setupEventListeners() {
 
         // Create a wrapper for vertical stacking
         const wrapper = document.createElement('div');
-        wrapper.style.display = 'flex';
-        wrapper.style.flexDirection = 'column';
-        wrapper.style.alignItems = 'center';
-        wrapper.style.marginRight = '10px';
+        wrapper.style.display = 'none'; // Hidden (moved to native menu)
+        wrapper.style.alignItems = 'center'; // Vertically center items
+        wrapper.style.gap = '5px'; // Add space between button and checkbox
+
 
         // Create Walmart Button
         const walmartBtn = document.createElement('button');
         walmartBtn.id = 'runWalmartSheetBtn';
         walmartBtn.className = 'nav-btn nav-item-group';
         walmartBtn.title = 'Open Walmart Spreadsheet Exporter';
+        walmartBtn.style.cssText = 'width: 120px; height: 40px; justify-content: center;';
 
         const walmartIcon = document.createElement('img');
         walmartIcon.src = '/WalmartSheet/walmart.png';
@@ -79,17 +87,15 @@ function setupEventListeners() {
 
         // Create Dock Checkbox and Label
         const dockLabel = document.createElement('label');
-
-        dockLabel.title = "Docking opens the tool in a new browser tab instead of a floating popup window.";
-        dockLabel.style.cursor = 'pointer';
-        dockLabel.style.fontSize = '10px';
-        dockLabel.style.color = 'var(--text-color)';
-        dockLabel.style.marginTop = '2px';
+        dockLabel.style.display = 'none'; // Hide the label
 
         const dockCheckbox = document.createElement('input');
         dockCheckbox.type = 'checkbox';
         dockCheckbox.id = 'dockWalmartSheet';
-        dockCheckbox.style.marginRight = '3px';
+        dockCheckbox.checked = true; // Always checked
+
+        // Persist the 'checked' state
+        localStorage.setItem('wysiwyg_dock_walmart', 'true');
 
         dockLabel.appendChild(dockCheckbox);
         dockLabel.appendChild(document.createTextNode('Dock'));
@@ -119,6 +125,9 @@ function setupEventListeners() {
     document.getElementById('dockScanner')?.addEventListener('change', (e) => {
         localStorage.setItem('wysiwyg_dock_scanner', e.target.checked);
     });
+    document.getElementById('autoGenerateToggle')?.addEventListener('change', (e) => {
+        localStorage.setItem('wysiwyg_auto_generate', e.target.checked);
+    });
 
     // --- Modals ---
     addClickListener('closePasswordModalBtn', closePasswordModal);
@@ -139,12 +148,21 @@ function setupEventListeners() {
 
     // --- Calculator Live Auto-Populate & Enter Key ---
     ['calcCompPrice', 'calcCompShip'].forEach(id => {
-        document.getElementById(id)?.addEventListener('input', () => {
-            const cp = parseFloat(document.getElementById('calcCompPrice').value) || 0;
-            const cs = parseFloat(document.getElementById('calcCompShip').value) || 0;
+        const el = document.getElementById(id);
+        el?.addEventListener('input', () => {
+            const compPriceEl = document.getElementById('calcCompPrice');
+            const compShipEl = document.getElementById('calcCompShip');
+            const ourPriceEl = document.getElementById('calcOurPrice');
+
+            const cp = parseFloat(compPriceEl.value) || 0;
+            const cs = parseFloat(compShipEl.value) || 0;
             const ct = cp + cs;
+
+            localStorage.setItem('wysiwyg_calc_comp_price', compPriceEl.value);
+            localStorage.setItem('wysiwyg_calc_comp_ship', compShipEl.value);
+
             if (ct > 0) {
-                document.getElementById('calcCompTotal').value = ct.toFixed(2);
+                document.getElementById('calcCompTotal').value = ct.toFixed(2); // This is auto-calculated, no need to save
                 document.getElementById('calcOurPrice').value = (ct - 9).toFixed(2);
             } else {
                 document.getElementById('calcCompTotal').value = '';
@@ -152,6 +170,12 @@ function setupEventListeners() {
             }
         });
     });
+    const ourPriceEl = document.getElementById('calcOurPrice');
+    if (ourPriceEl) {
+        ourPriceEl.addEventListener('input', () => {
+            localStorage.setItem('wysiwyg_calc_our_price', ourPriceEl.value);
+        });
+    }
     ['calcCondition', 'calcCompPrice', 'calcCompShip', 'calcOurPrice'].forEach(id => {
         document.getElementById(id)?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -187,7 +211,7 @@ function setupEventListeners() {
     });
 
     // --- Scraper ---
-    document.getElementById('discogsUrlInput')?.addEventListener('click', async function() {
+    document.getElementById('discogsUrlInput')?.addEventListener('click', async function () {
         if (document.getElementById('autoPasteToggle').checked) {
             try {
                 const text = await navigator.clipboard.readText();
@@ -206,15 +230,20 @@ function setupEventListeners() {
     addClickListener('saveProfileBtn', saveProfile);
     addClickListener('generateBtn', generateListingData);
     addClickListener('clearBtn', fullReset);
+    addClickListener('scrapeBtn', () => {
+        if (document.getElementById('lockSku')) document.getElementById('lockSku').checked = false;
+        if (document.getElementById('lockDesc')) document.getElementById('lockDesc').checked = false;
+    });
 
-    document.getElementById('conditionOfMedia')?.addEventListener('change', function() {
+    document.getElementById('conditionOfMedia')?.addEventListener('change', function () {
         if (!this.value) document.getElementById('mediaDescriptionText').value = "";
         updateDynamicColors();
     });
+    document.getElementById('skuFlag')?.addEventListener('change', updateDynamicColors);
     document.querySelectorAll('input[name="media_modifier"]').forEach(radio => {
         radio.addEventListener('change', updateDynamicColors);
     });
-    document.getElementById('sleeveCondition')?.addEventListener('change', function() {
+    document.getElementById('sleeveCondition')?.addEventListener('change', function () {
         if (!this.value) document.getElementById('sleeveDesc').value = "";
         updateDynamicColors();
     });
@@ -224,10 +253,11 @@ function setupEventListeners() {
     addClickListener('copySkuBtn', (e) => copyField('outputSku', e.currentTarget));
     addClickListener('copyDescBtn', (e) => copyField('outputDesc', e.currentTarget));
     addClickListener('copyOurPriceBtn', (e) => copyField('calcOurPrice', e.currentTarget));
-    addClickListener('btnListed', (e) => incrementCounter('L', e.currentTarget));
-    addClickListener('btnAmazon', (e) => incrementCounter('AA', e.currentTarget));
-    addClickListener('btnDiscogs', (e) => incrementCounter('DA', e.currentTarget));
-    addClickListener('btnDupes', (e) => incrementCounter('D', e.currentTarget));
+    addClickListener('editCountersBtn', openEditCountersModal);
+    addClickListener('closeEditCountersModalBtn', closeEditCountersModal);
+    addClickListener('addCounterRowBtn', addCounterRow);
+    addClickListener('saveCountersBtn', saveCounterButtonsConfig);
+    addClickListener('cancelCountersBtn', closeEditCountersModal);
     addClickListener('openListingsFolderBtn', openListingsFolder);
 
     // --- Details Tab ---
@@ -238,7 +268,9 @@ function setupEventListeners() {
     addClickListener('pasteToScratchpadBtn', pasteToManualInput);
 
     // --- Footer ---
-    addClickListener('openRequestModalBtn', openRequestModal);
+    if (document.getElementById('openRequestModalBtn')) {
+        addClickListener('openRequestModalBtn', openRequestModal);
+    }
 
     // --- Service Status Polling ---
     // Check status every 5 seconds to reduce system load
@@ -252,7 +284,9 @@ async function runUberPaste() {
     try {
         const resp = await fetch('/run-uberpaste', { method: 'POST' });
         const res = await resp.json();
-        if (res.status !== 'success') {
+        if (res.status === 'success') {
+            updateServiceStatus();
+        } else {
             customAlert('Could not start UberPaste: ' + res.message);
         }
     } catch (e) {
@@ -325,30 +359,34 @@ async function updateServiceStatus() {
     try {
         const resp = await fetch('/api/service-status');
         const status = await resp.json();
-        
+
         const wysiBtn = document.getElementById('runWysiScanBtn');
         if (wysiBtn) {
-            // Do not disable, just indicate status. 
-            // Clicking again will simply open the window if server is running.
             if (status.wysiscan) {
-                wysiBtn.classList.add('active-tool'); // You can add CSS for this later if you want
-                wysiBtn.title = "Scanner is running (Click to open)";
+                wysiBtn.disabled = true;
+                wysiBtn.style.opacity = "0.5";
+                wysiBtn.title = "WysiScan is already running";
                 wysiBtn.style.border = "2px solid #28a745";
             } else {
-                wysiBtn.classList.remove('active-tool');
+                wysiBtn.disabled = false;
+                wysiBtn.style.opacity = "1";
                 wysiBtn.title = "Open WysiScan";
                 wysiBtn.style.border = "";
             }
         }
-        
+
         const uberBtn = document.getElementById('runUberPasteBtn');
         if (uberBtn) {
             if (status.uberpaste) {
+                uberBtn.disabled = true;
+                uberBtn.style.opacity = "0.5";
+                uberBtn.title = "UberPaste is already running";
                 uberBtn.style.border = "2px solid #28a745";
-                uberBtn.title = "UberPaste is running";
             } else {
-                uberBtn.style.border = "";
+                uberBtn.disabled = false;
+                uberBtn.style.opacity = "1";
                 uberBtn.title = "Launch UberPaste";
+                uberBtn.style.border = "";
             }
         }
     } catch (e) {
@@ -398,7 +436,7 @@ async function setupSaveConditionsButton() {
     saveBtn.title = 'Save Variable Conditions (Requires Admin File)';
     saveBtn.innerHTML = '💾'; // Save icon
     saveBtn.disabled = true; // Start as disabled
-    
+
     // Styling for disabled state
     saveBtn.style.marginLeft = '8px';
     saveBtn.style.padding = '0 5px';
@@ -447,7 +485,7 @@ async function loadAppVersion() {
         // Detect Dev Mode based on port 8009
         const isDev = window.location.port === '8009';
         const appName = isDev ? "WYSIWYG DEV" : "WYSIWYG";
-        
+
         if (isDev) {
             // Add visual indicators for Dev Mode
             document.body.style.borderTop = "5px solid #ff9800";
@@ -460,7 +498,7 @@ async function loadAppVersion() {
 
         let titleHtml = `${appName} - v${vStr}`;
         if (isDev) {
-             titleHtml = `<span style="color: #ff9800;">🛠️ ${titleHtml}</span>`;
+            titleHtml = `<span style="color: #ff9800;">🛠️ ${titleHtml}</span>`;
         }
 
         if (v.update_available) {
@@ -478,7 +516,7 @@ function runInstaller() {
         try {
             await fetch('/run-installer', { method: 'POST' });
             window.close();
-             document.body.innerHTML = "<div style='display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;font-family:Arial;text-align:center;'><h1>🚀 Update Started</h1><p>The installer is running.</p><p>The application will close automatically.</p><p>You can close this tab.</p></div>";
+            document.body.innerHTML = "<div style='display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;font-family:Arial;text-align:center;'><h1>🚀 Update Started</h1><p>The installer is running.</p><p>The application will close automatically.</p><p>You can close this tab.</p></div>";
         } catch (e) { customAlert("Failed to run installer: " + e); }
     });
 }
@@ -553,6 +591,13 @@ async function initializeDropdowns() {
                 populateDropdown(htmlId, data[idMap[htmlId]]);
             }
         });
+
+        // Restore skuFlag from profile after dropdown is populated
+        const skuFlag = localStorage.getItem('wysiwyg_profile_sku_flag');
+        if (skuFlag && document.getElementById('skuFlag')) {
+            document.getElementById('skuFlag').value = skuFlag;
+        }
+        updateDynamicColors();
     } catch (e) { console.error("Failed to load settings.", e); }
 }
 
@@ -601,7 +646,7 @@ async function updateMenus() {
             // 1. Update general menus (data.json, version.json, etc.)
             const resp = await fetch('/update-menus', { method: 'POST' });
             const res = await resp.json();
-            
+
             // 2. Merge conditions (Conditions.json)
             const respCond = await fetch('/api/merge-conditions', { method: 'POST' });
             const resCond = await respCond.json();
@@ -658,14 +703,14 @@ async function loadCounters() {
     } catch (e) { console.error(e); }
 }
 
-async function incrementCounter(type, btn) {
+async function incrementCounter(initial, label, btn) {
     const originalHTML = btn.innerHTML;
     btn.innerText = "⏳";
     try {
         const resp = await fetch('/api/increment-counter', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: type })
+            body: JSON.stringify({ type: initial, label: label })
         });
         const res = await resp.json();
         if (res.status === 'success') {
@@ -748,13 +793,14 @@ function closeRequestModal() {
 let costCalcData = null;
 async function openCalcModal() {
     document.getElementById('calcModal').style.display = 'flex';
-    
-    // Clear all fields every time the modal opens
-    ['calcCompPrice', 'calcCompShip', 'calcCompTotal', 'calcOurPrice', 'calcOurTotal'].forEach(id => {
-        document.getElementById(id).value = '';
-    });
-    
+
+    // Load saved values instead of clearing
+    document.getElementById('calcCompPrice').value = localStorage.getItem('wysiwyg_calc_comp_price') || '';
+    document.getElementById('calcCompShip').value = localStorage.getItem('wysiwyg_calc_comp_ship') || '';
+    document.getElementById('calcOurPrice').value = localStorage.getItem('wysiwyg_calc_our_price') || '';
+
     if (!costCalcData) {
+        // Load condition data only once
         try {
             const resp = await fetch('/api/cost_calc.json');
             if (resp.ok) {
@@ -764,6 +810,7 @@ async function openCalcModal() {
                 sel.innerHTML = '';
                 costCalcData.forEach(item => {
                     const opt = document.createElement('option');
+                    if (item === "Like New") opt.selected = true; // Default to Like New
                     opt.value = item; opt.textContent = item;
                     sel.appendChild(opt);
                 });
@@ -771,23 +818,28 @@ async function openCalcModal() {
         } catch (e) { console.error("Failed to load cost_calc.json", e); }
     }
 }
-function closeCalcModal() { document.getElementById('calcModal').style.display = 'none'; }
+function closeCalcModal() {
+    document.getElementById('calcModal').style.display = 'none';
+    // Clear calculated fields on close
+    document.getElementById('calcCompTotal').value = '';
+    document.getElementById('calcOurTotal').value = '';
+}
 function runCalculator() {
     const condition = document.getElementById('calcCondition').value;
     const compPrice = parseFloat(document.getElementById('calcCompPrice').value) || 0;
     const compShip = parseFloat(document.getElementById('calcCompShip').value) || 0;
     const compTotal = compPrice + compShip;
-    
+
     let ourPrice = parseFloat(document.getElementById('calcOurPrice').value);
-    
+
     if (condition === "Like New") {
         document.getElementById('calcCompTotal').value = compTotal.toFixed(2);
-        
+
         if (isNaN(ourPrice)) {
             ourPrice = compTotal - 9;
             document.getElementById('calcOurPrice').value = ourPrice.toFixed(2);
         }
-        
+
         document.getElementById('calcOurTotal').value = (ourPrice + 7).toFixed(2);
     }
 }
@@ -796,11 +848,9 @@ function runCalculator() {
 
 function saveVariableConditions() {
     const mediaCondition = getVal('conditionOfMedia');
-    const skuFlag = getVal('skuFlag');
     const isOOP = document.getElementById('oopToggle').checked;
 
     localStorage.setItem('wysiwyg_variable_media_condition', mediaCondition);
-    localStorage.setItem('wysiwyg_variable_sku_flag', skuFlag);
     localStorage.setItem('wysiwyg_variable_is_oop', String(isOOP));
 
     const btn = document.getElementById('saveVariableConditionsBtn');
@@ -815,7 +865,6 @@ function saveVariableConditions() {
 
 function loadVariableConditions() {
     const savedMediaCondition = localStorage.getItem('wysiwyg_variable_media_condition');
-    const savedSkuFlag = localStorage.getItem('wysiwyg_variable_sku_flag');
     const savedIsOOP = localStorage.getItem('wysiwyg_variable_is_oop');
 
     if (savedMediaCondition) {
@@ -836,14 +885,6 @@ function loadVariableConditions() {
             // If modifier not found, check the "none" radio
             const noneRadio = document.querySelector('input[name="media_modifier"][value=""]');
             if (noneRadio) noneRadio.checked = true;
-        }
-    }
-
-    if (savedSkuFlag) {
-        const skuSelect = document.getElementById('skuFlag');
-        if (skuSelect) {
-            const option = Array.from(skuSelect.options).find(opt => opt.value === savedSkuFlag);
-            if (option) skuSelect.value = savedSkuFlag;
         }
     }
 
@@ -937,6 +978,16 @@ function updateDynamicColors() {
         sleeveDesc.classList.remove('bg-sleeve-red');
         sleeveDesc.title = "";
     }
+
+    // SKU Flags Logic
+    const skuSelect = document.getElementById('skuFlag');
+    if (skuSelect) {
+        if (skuSelect.value === "") {
+            skuSelect.classList.remove('sku-flag-selected');
+        } else {
+            skuSelect.classList.add('sku-flag-selected');
+        }
+    }
 }
 
 let storedPasswords = {};
@@ -1009,7 +1060,7 @@ function getVal(id) {
 async function fullReset() {
     const inputs = document.querySelectorAll('input[type="text"]:not(#boxNumber):not(#lister), input[type="url"], textarea:not(#outputDesc)');
     inputs.forEach(input => input.value = "");
-    const selects = document.querySelectorAll('select');
+    const selects = document.querySelectorAll('select:not(#skuFlag)');
     selects.forEach(sel => {
         Array.from(sel.options).forEach(opt => {
             opt.selected = (opt.value === "");
@@ -1021,6 +1072,8 @@ async function fullReset() {
     if (customOpts) Array.from(customOpts.options).forEach(opt => opt.selected = false);
     document.getElementById('outputSku').value = "";
     document.getElementById('outputDesc').value = "";
+    if (document.getElementById('lockSku')) document.getElementById('lockSku').checked = false;
+    if (document.getElementById('lockDesc')) document.getElementById('lockDesc').checked = false;
 
     // Clear Details Tab Elements
     document.getElementById('htmlPreview').innerHTML = "";
@@ -1029,15 +1082,18 @@ async function fullReset() {
 
     await clearWalmartCache();
 
-    updateDynamicColors();
+    loadProfile(); // Revert to profile settings first (box, lister, skuFlag)
     loadVariableConditions(); // Restore saved variables after reset
+    updateDynamicColors(); // Update dynamic colors using the restored values
 }
 
 function saveProfile() {
     const box = document.getElementById('boxNumber').value;
     const init = document.getElementById('lister').value;
+    const skuFlag = document.getElementById('skuFlag') ? document.getElementById('skuFlag').value : '';
     localStorage.setItem('wysiwyg_profile_box', box);
     localStorage.setItem('wysiwyg_profile_init', init);
+    localStorage.setItem('wysiwyg_profile_sku_flag', skuFlag);
     customAlert("Profile Saved!");
 }
 
@@ -1046,6 +1102,10 @@ function loadProfile() {
     const init = localStorage.getItem('wysiwyg_profile_init');
     if (box) document.getElementById('boxNumber').value = box;
     if (init) document.getElementById('lister').value = init;
+    const skuFlag = localStorage.getItem('wysiwyg_profile_sku_flag') || "";
+    if (document.getElementById('skuFlag')) {
+        document.getElementById('skuFlag').value = skuFlag;
+    }
 }
 
 async function clearWalmartCache() {
@@ -1071,10 +1131,16 @@ function parsePastedData(input) {
     if (!input) return;
 
     // 1. Reset Selects
-    document.querySelectorAll('select').forEach(sel => {
+    document.querySelectorAll('select:not(#skuFlag)').forEach(sel => {
         if (sel.multiple) Array.from(sel.options).forEach(opt => opt.selected = false);
         else sel.selectedIndex = 0;
     });
+
+    // Restore skuFlag from profile
+    const savedSkuFlag = localStorage.getItem('wysiwyg_profile_sku_flag') || "";
+    if (document.getElementById('skuFlag')) {
+        document.getElementById('skuFlag').value = savedSkuFlag;
+    }
 
     // 2. Clear Description Field
     document.getElementById('mediaDescriptionText').value = "";
@@ -1205,6 +1271,7 @@ function parsePastedData(input) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(context)
     }).catch(err => console.error("Auto-sync to Walmart failed:", err));
+    updateDynamicColors();
 }
 
 function generateListingData() {
@@ -1388,7 +1455,7 @@ function processFormatData(inputs) {
     let finalFormatString = "";
     if (formatLineRaw.includes(" + ")) {
         let complex = formatLineRaw;
-        
+
         let editions = [];
         const editionEl = document.getElementById('edition');
         if (editionEl) {
@@ -1396,7 +1463,7 @@ function processFormatData(inputs) {
         } else {
             editions = edition.split(' / ');
         }
-        
+
         editions.forEach(ed => {
             if (ed) {
                 const regex = new RegExp(ed + "[,\\s]*", "gi");
@@ -1448,7 +1515,7 @@ function processFormatData(inputs) {
                     if (opt.text) flaws.push(opt.text);
                     else flaws.push(opt.title);
                 }
-            } catch (e) {}
+            } catch (e) { }
         });
 
         if (flaws.length > 0) {
@@ -1461,7 +1528,7 @@ function processFormatData(inputs) {
                 : flaws[0] + " & " + flaws.slice(1).join(" / ");
 
             const hasSleeveCondition = sleeveCond && sleeveCond.trim() !== "";
-            const hasSleeveDesc     = sleeveDesc && sleeveDesc.trim() !== "";
+            const hasSleeveDesc = sleeveDesc && sleeveDesc.trim() !== "";
 
             if (hasSleeveCondition && hasSleeveDesc) {
                 // Case A: sleeveDesc text is treated as the FIRST condition.
@@ -1515,7 +1582,7 @@ function assembleDescription(inputs, country, fmtData) {
         // Order: ... sleeveCond, sleeveTypeLabel, "sleevePkg with condition"
         // This produces e.g.: "Very Good+ JCard Jewel Case with cracking"
         const sleeveTail = (fmtData.sleevePkg && fmtData.sleevePkg.trim())
-            ? fmtData.sleevePkg + ' with ' + fmtData.conditionPhrase 
+            ? fmtData.sleevePkg + ' with ' + fmtData.conditionPhrase
             : 'with ' + fmtData.conditionPhrase;
 
         parts = [
@@ -1566,7 +1633,7 @@ function groupFlaws(flaws) {
     if (!flaws || flaws.length <= 1) return flaws;
 
     const separators = [' to ', ' through ', ' on '];
-    
+
     // Helper to split a flaw into [prefix, separator, suffix]
     function splitFlaw(f) {
         for (const sep of separators) {
@@ -1582,7 +1649,7 @@ function groupFlaws(flaws) {
     }
 
     let result = [...flaws];
-    
+
     // 1. Prefix Grouping
     // Group by (prefix + separator)
     let prefixGrouped = [];
@@ -1825,14 +1892,24 @@ function handleOutput(sku, desc, isOOP, flag) {
     const suppressSuffix = ['RSDO', 'B', '70', '86', '-RSDO', '-B', '-70', '-86'].includes(flag);
     let copyText = "";
 
-    if (!isOOP && !suppressSuffix) {
-        document.getElementById('outputSku').value = sku + "-O";
-        copyText = `${sku}-O\n${desc}`;
-    } else {
-        document.getElementById('outputSku').value = sku;
-        copyText = `${sku}\n${desc}`;
+    const lockSku = document.getElementById('lockSku')?.checked || false;
+    const lockDesc = document.getElementById('lockDesc')?.checked || false;
+
+    if (!lockSku) {
+        if (!isOOP && !suppressSuffix) {
+            document.getElementById('outputSku').value = sku + "-O";
+        } else {
+            document.getElementById('outputSku').value = sku;
+        }
     }
-    document.getElementById('outputDesc').value = desc;
+
+    if (!lockDesc) {
+        document.getElementById('outputDesc').value = desc;
+    }
+
+    const finalSku = document.getElementById('outputSku').value;
+    const finalDesc = document.getElementById('outputDesc').value;
+    copyText = `${finalSku}\n${finalDesc}`;
 
     // Update Walmart Context immediately so the sheet can pull it
     try {
@@ -1843,9 +1920,9 @@ function handleOutput(sku, desc, isOOP, flag) {
         const rawText = (scratchpadEl && scratchpadEl.value) ? scratchpadEl.value : (hiddenScrapeEl ? hiddenScrapeEl.textContent : '');
 
         const context = {
-            sku: document.getElementById('outputSku')?.value || '',
+            sku: finalSku,
             builderDescription: document.getElementById('mediaDescriptionText')?.value || '',
-            generatedDescription: walmartFilteredDesc || desc, // Use the fresh filtered description
+            generatedDescription: lockDesc ? finalDesc : (walmartFilteredDesc || finalDesc), // Use the fresh filtered description unless locked
             label: document.getElementById('recordLabel')?.value || '',
             raw_text: rawText,
             discogsUrl: document.getElementById('discogsUrlInput')?.value || ''
@@ -1875,6 +1952,9 @@ function handleScrapeResult() {
     const errorDiv = document.getElementById('scraperError');
     const output = document.getElementById('scraperOutput');
     errorDiv.innerHTML = ""; // Clear previous messages
+
+    if (document.getElementById('lockSku')) document.getElementById('lockSku').checked = false;
+    if (document.getElementById('lockDesc')) document.getElementById('lockDesc').checked = false;
 
     // Check if the response was a script (success) or an error div.
     if (output && output.querySelector('script')) {
@@ -1985,16 +2065,10 @@ function resetScraperTab() {
     });
 }
 
+let currentCounts = {};
 function updateCounterUI(counts) {
-    const btnL = document.getElementById('btnListed');
-    const btnAA = document.getElementById('btnAmazon');
-    const btnDA = document.getElementById('btnDiscogs');
-    const btnD = document.getElementById('btnDupes');
-
-    if (btnL) btnL.innerHTML = `L<br>${counts['Listed'] || 0}`;
-    if (btnAA) btnAA.innerHTML = `AA<br>${counts['Amazon Adds'] || 0}`;
-    if (btnDA) btnDA.innerHTML = `DA<br>${counts['Discogs Adds'] || 0}`;
-    if (btnD) btnD.innerHTML = `D<br>${counts['Duplicates'] || 0}`;
+    currentCounts = counts || {};
+    renderCounterButtons(currentCounts);
 }
 
 // --- Custom Options Logic ---
@@ -2064,17 +2138,17 @@ function renderCustomOptionsSelect() {
     configs.forEach(config => {
         const select = document.getElementById(config.id);
         if (!select) return;
-        
+
         // Match by title/text key instead of entire JSON string to handle 'favorite' toggle correctly
         const selectedKeys = Array.from(select.selectedOptions).map(o => {
             try {
                 const d = JSON.parse(o.value);
                 return d.title + '|||' + d.text;
-            } catch(e) { return ''; }
+            } catch (e) { return ''; }
         });
 
         select.innerHTML = '';
-        
+
         customOptionsData[config.key].forEach((opt) => {
             const option = document.createElement('option');
             const val = JSON.stringify(opt);
@@ -2091,19 +2165,19 @@ function renderCustomOptionsSelect() {
 function renderCustomOptionsModalList() {
     const list = document.getElementById('customOptionsList');
     if (!list) return;
-    
+
     list.innerHTML = '';
     const currentData = customOptionsData[currentModalCategory];
-    
+
     if (!currentData || currentData.length === 0) {
         list.innerHTML = '<div style="font-size: 11px; color: #666; text-align: center;">No options found for this category. Add one below.</div>';
         return;
     }
-    
+
     currentData.forEach((opt, index) => {
         const item = document.createElement('div');
         item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:4px 5px; border-bottom:1px solid var(--border-color); gap:3px;';
-        
+
         if (editingCustomOptionIndex === index) {
             item.style.backgroundColor = 'var(--wysiwyg-blue-light, #e6f0ff)';
         }
@@ -2114,6 +2188,13 @@ function renderCustomOptionsModalList() {
         textCol.onclick = () => editCustomOption(index);
         textCol.innerHTML = `<strong>${opt.title}</strong><br><span style="color:#666;">${opt.text}</span>`;
 
+        const starBtn = document.createElement('button');
+        starBtn.innerHTML = opt.favorite ? '⭐' : '☆';
+        starBtn.title = opt.favorite ? 'Remove from Favorites' : 'Add to Favorites';
+        starBtn.className = 'nav-btn';
+        starBtn.style.cssText = 'padding:2px 5px; height:20px; font-size:10px; flex-shrink:0; cursor:pointer;';
+        starBtn.onclick = (e) => toggleFavoriteCustomOption(e, index);
+
         const delBtn = document.createElement('button');
         delBtn.innerHTML = '❌';
         delBtn.title = 'Delete Option';
@@ -2122,26 +2203,27 @@ function renderCustomOptionsModalList() {
         delBtn.onclick = (e) => deleteCustomOption(e, index);
 
         item.appendChild(textCol);
+        item.appendChild(starBtn);
         item.appendChild(delBtn);
         list.appendChild(item);
     });
 }
 
 
-window.editCustomOption = function(index) {
+window.editCustomOption = function (index) {
     editingCustomOptionIndex = index;
     const opt = customOptionsData[currentModalCategory][index];
     document.getElementById('newOptionTitle').value = opt.title;
     document.getElementById('newOptionText').value = opt.text;
     document.getElementById('addCustomOptionBtn').innerText = 'Update';
-    
+
     const cancelBtn = document.getElementById('cancelEditCustomOptionBtn');
     if (cancelBtn) cancelBtn.style.display = 'inline-block';
-    
+
     renderCustomOptionsModalList();
 };
 
-window.deleteCustomOption = function(event, index) {
+window.deleteCustomOption = function (event, index) {
     event.stopPropagation();
     customOptionsData[currentModalCategory].splice(index, 1);
     if (editingCustomOptionIndex === index) {
@@ -2154,16 +2236,34 @@ window.deleteCustomOption = function(event, index) {
     renderCustomOptionsModalList();
 };
 
+window.toggleFavoriteCustomOption = function (event, index) {
+    event.stopPropagation();
+    const item = customOptionsData[currentModalCategory][index];
+    if (item) {
+        item.favorite = !item.favorite;
+        if (editingCustomOptionIndex === index) {
+            // Keep editing index in sync if it moves after sorting
+            const tempItem = item;
+            saveCustomOptions(); // sorts list
+            editingCustomOptionIndex = customOptionsData[currentModalCategory].findIndex(i => i.title === tempItem.title && i.text === tempItem.text);
+        } else {
+            saveCustomOptions();
+        }
+        renderCustomOptionsSelect();
+        renderCustomOptionsModalList();
+    }
+};
+
 function cancelEditCustomOption() {
     editingCustomOptionIndex = -1;
     if (document.getElementById('newOptionTitle')) document.getElementById('newOptionTitle').value = '';
     if (document.getElementById('newOptionText')) document.getElementById('newOptionText').value = '';
     const addBtn = document.getElementById('addCustomOptionBtn');
     if (addBtn) addBtn.innerText = 'Add';
-    
+
     const cancelBtn = document.getElementById('cancelEditCustomOptionBtn');
     if (cancelBtn) cancelBtn.style.display = 'none';
-    
+
     renderCustomOptionsModalList();
 }
 
@@ -2171,7 +2271,7 @@ function cancelEditCustomOption() {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadCustomOptions();
-    
+
     document.getElementById('modalCategorySelect')?.addEventListener('change', (e) => {
         currentModalCategory = e.target.value;
         cancelEditCustomOption();
@@ -2182,33 +2282,33 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelEditCustomOption();
         document.getElementById('customOptionsModal').style.display = 'block';
     });
-    
+
     document.getElementById('closeCustomOptionsModalBtn')?.addEventListener('click', () => {
         document.getElementById('customOptionsModal').style.display = 'none';
     });
-    
+
     document.getElementById('cancelEditCustomOptionBtn')?.addEventListener('click', () => {
         cancelEditCustomOption();
     });
-    
+
     document.getElementById('addCustomOptionBtn')?.addEventListener('click', () => {
         const titleInput = document.getElementById('newOptionTitle');
         const textInput = document.getElementById('newOptionText');
-        
+
         const title = titleInput.value.trim();
         const text = textInput.value.trim();
-        
+
         if (!title) {
             alert('Please enter a title');
             return;
         }
-        
+
         if (editingCustomOptionIndex !== -1) {
             customOptionsData[currentModalCategory][editingCustomOptionIndex] = { title, text };
         } else {
             customOptionsData[currentModalCategory].push({ title, text });
         }
-        
+
         saveCustomOptions();
         cancelEditCustomOption();
         renderCustomOptionsSelect();
@@ -2228,7 +2328,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['lpOptions', 'cdOptions', 'customOptions'].forEach(id => {
         const select = document.getElementById(id);
         if (!select) return;
-        
+
         select.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             const menu = document.getElementById('customContextMenu');
@@ -2255,12 +2355,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetId = menu.dataset.targetId;
             const select = document.getElementById(targetId);
             if (!select) return;
-            
+
             const key = targetId === 'lpOptions' ? 'lp' : (targetId === 'cdOptions' ? 'cd' : 'cassette');
             const selectedOptions = Array.from(select.selectedOptions);
-            
+
             if (selectedOptions.length === 0) return;
-            
+
             selectedOptions.forEach(opt => {
                 try {
                     const data = JSON.parse(opt.value);
@@ -2268,11 +2368,158 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (item) {
                         item.favorite = !item.favorite;
                     }
-                } catch(e) {}
+                } catch (e) { }
             });
-            
+
             saveCustomOptions();
             renderCustomOptionsSelect();
         };
     }
 });
+
+// --- Dynamic Counter Buttons Configuration & Editor ---
+let counterButtons = [
+    { initial: 'L', label: 'Listed', color: '#28a745' },
+    { initial: 'AA', label: 'Amazon Adds', color: '#007bff' },
+    { initial: 'DA', label: 'Discogs Adds', color: '#17a2b8' },
+    { initial: 'D', label: 'Duplicates', color: '#fd7e14' }
+];
+
+function loadCounterButtonsConfig() {
+    const saved = localStorage.getItem('wysiwyg_counter_buttons');
+    if (saved) {
+        try {
+            counterButtons = JSON.parse(saved);
+        } catch (e) { console.error("Failed to parse counter buttons config", e); }
+    }
+}
+
+function renderCounterButtons(counts = {}) {
+    const container = document.getElementById('counterButtonsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    counterButtons.forEach((btn) => {
+        const button = document.createElement('button');
+        button.className = 'counter-button';
+        button.style.backgroundColor = btn.color || 'var(--secondary-color)';
+        button.title = `${btn.label} +1`;
+        
+        const countVal = counts[btn.label] || 0;
+        button.innerHTML = `${btn.initial}<br>${countVal}`;
+        
+        button.addEventListener('click', (e) => {
+            incrementCounter(btn.initial, btn.label, e.currentTarget);
+        });
+        
+        container.appendChild(button);
+    });
+}
+
+let tempCounterButtons = [];
+
+function openEditCountersModal() {
+    tempCounterButtons = JSON.parse(JSON.stringify(counterButtons));
+    renderCounterEditorRows();
+    document.getElementById('editCountersModal').style.display = 'flex';
+}
+
+function closeEditCountersModal() {
+    document.getElementById('editCountersModal').style.display = 'none';
+}
+
+function renderCounterEditorRows() {
+    const container = document.getElementById('counterEditorRows');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    tempCounterButtons.forEach((btn, index) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display: flex; gap: 8px; align-items: center; background: var(--bg-secondary); padding: 5px; border-radius: 4px;';
+        
+        // Initial input
+        const initLabel = document.createElement('span');
+        initLabel.innerText = 'Init:';
+        initLabel.style.fontSize = '11px';
+        const initInput = document.createElement('input');
+        initInput.type = 'text';
+        initInput.value = btn.initial;
+        initInput.style.cssText = 'width: 50px; padding: 4px;';
+        initInput.addEventListener('input', (e) => {
+            tempCounterButtons[index].initial = e.target.value;
+        });
+        
+        // Label input
+        const labelText = document.createElement('span');
+        labelText.innerText = 'Val:';
+        labelText.style.fontSize = '11px';
+        const labelInput = document.createElement('input');
+        labelInput.type = 'text';
+        labelInput.value = btn.label;
+        labelInput.style.cssText = 'flex: 1; padding: 4px;';
+        labelInput.addEventListener('input', (e) => {
+            tempCounterButtons[index].label = e.target.value;
+        });
+        
+        // Color input
+        const colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.value = btn.color || '#6c757d';
+        colorInput.style.cssText = 'width: 35px; height: 25px; padding: 0; cursor: pointer; border: none; background: transparent;';
+        colorInput.addEventListener('input', (e) => {
+            tempCounterButtons[index].color = e.target.value;
+        });
+        
+        // Delete button
+        const delBtn = document.createElement('button');
+        delBtn.innerHTML = '🗑️';
+        delBtn.style.cssText = 'background: transparent; border: none; cursor: pointer; font-size: 14px;';
+        delBtn.addEventListener('click', () => {
+            tempCounterButtons.splice(index, 1);
+            renderCounterEditorRows();
+        });
+        
+        row.appendChild(initLabel);
+        row.appendChild(initInput);
+        row.appendChild(labelText);
+        row.appendChild(labelInput);
+        row.appendChild(colorInput);
+        row.appendChild(delBtn);
+        container.appendChild(row);
+    });
+    
+    const addBtn = document.getElementById('addCounterRowBtn');
+    if (addBtn) {
+        addBtn.disabled = tempCounterButtons.length >= 7;
+    }
+}
+
+function addCounterRow() {
+    if (tempCounterButtons.length >= 7) return;
+    const colors = ['#28a745', '#007bff', '#17a2b8', '#fd7e14', '#6f42c1', '#e83e8c', '#dc3545'];
+    const nextColor = colors[tempCounterButtons.length % colors.length];
+    tempCounterButtons.push({
+        initial: 'NEW',
+        label: 'Custom Label',
+        color: nextColor
+    });
+    renderCounterEditorRows();
+}
+
+function saveCounterButtonsConfig() {
+    for (let btn of tempCounterButtons) {
+        if (!btn.initial || btn.initial.trim() === '') {
+            customAlert("Initials cannot be empty");
+            return;
+        }
+        if (!btn.label || btn.label.trim() === '') {
+            customAlert("Values cannot be empty");
+            return;
+        }
+    }
+    
+    counterButtons = JSON.parse(JSON.stringify(tempCounterButtons));
+    localStorage.setItem('wysiwyg_counter_buttons', JSON.stringify(counterButtons));
+    renderCounterButtons(currentCounts);
+    closeEditCountersModal();
+}

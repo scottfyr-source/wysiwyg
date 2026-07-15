@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['WysiScan\\scanner_server.py'],
+    ['C:\\Git\\WysiWyg\\WysiScan\\scanner_server.py'],
     pathex=[],
     binaries=[],
-    datas=[('scanner_test.html', 'WysiScan'), ('WysiScan.ico', 'WysiScan'), ('WysiScan.png', 'WysiScan')],
+    datas=[('C:\\Git\\WysiWyg\\WysiScan\\scanner_test.html', 'WysiScan'), ('C:\\Git\\WysiWyg\\WysiScan\\WysiScan.ico', 'WysiScan'), ('C:\\Git\\WysiWyg\\WysiScan\\WysiScan.png', 'WysiScan')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -35,5 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['WysiScan.ico'],
+    icon=['C:\\Git\\WysiWyg\\WysiScan\\WysiScan.ico'],
 )

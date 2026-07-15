@@ -2190,6 +2190,14 @@ async def redo_action(data: dict = Body(...)):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+LAST_HEARTBEAT = time.time()
+
+@app.post("/api/heartbeat")
+async def heartbeat():
+    global LAST_HEARTBEAT
+    LAST_HEARTBEAT = time.time()
+    return {"status": "ok"}
+
 @app.post("/exit")
 async def exit_app():
     """Endpoint to gracefully shut down the server."""
@@ -2216,20 +2224,78 @@ def run_server():
 
     logging.info("--- WysiScan Server Starting ---")
 
-    # Only open browser automatically if run as a standalone script
-    if '--launched-by-main' not in sys.argv:
-        def open_browser():
-            time.sleep(1.5)
-            webbrowser.open("http://127.0.0.1:8010")
+    # Start heartbeat monitor thread to auto-shutdown when browser tab is closed
+    def monitor_heartbeat():
+        global LAST_HEARTBEAT
+        # Allow 15 seconds for browser to load and send initial heartbeat
+        time.sleep(15)
+        while True:
+            time.sleep(2)
+            if time.time() - LAST_HEARTBEAT > 60:
+                logging.info("No heartbeat received for 60 seconds. Shutting down WysiScan server...")
+                os.kill(os.getpid(), signal.SIGTERM)
+                break
 
-        threading.Thread(target=open_browser, daemon=True).start()
+    threading.Thread(target=monitor_heartbeat, daemon=True).start()
+
+    if '--launched-by-main' in sys.argv:
+        try:
+            # log_config=None is CRITICAL. It prevents uvicorn from trying to use the console,
+            # which causes the "NoneType object has no attribute isatty" crash in frozen apps.
+            uvicorn.run(app, host="127.0.0.1", port=8010, log_config=None)
+        except Exception as e:
+            logging.critical(f"WysiScan Server Crashed: {e}", exc_info=True)
+    else:
+        def start_uvicorn():
+            try:
+                uvicorn.run(app, host="127.0.0.1", port=8010, log_config=None)
+            except Exception as e:
+                logging.critical(f"WysiScan Server Crashed: {e}", exc_info=True)
+
+        server_thread = threading.Thread(target=start_uvicorn, daemon=True)
+        server_thread.start()
+        time.sleep(0.5)
+
+        from PySide6.QtCore import QUrl
+        from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage, QWebEngineSettings
+
+        qt_app = QApplication(sys.argv)
+        profile = QWebEngineProfile("wysiscan_profile")
         
-    try:
-        # log_config=None is CRITICAL. It prevents uvicorn from trying to use the console,
-        # which causes the "NoneType object has no attribute isatty" crash in frozen apps.
-        uvicorn.run(app, host="127.0.0.1", port=8010, log_config=None)
-    except Exception as e:
-        logging.critical(f"WysiScan Server Crashed: {e}", exc_info=True)
+        window = QMainWindow()
+        window.setWindowTitle("WysiScan")
+        window.resize(1200, 900)
+        
+        icon_file = os.path.join(ASSET_DIR, "WysiScan.png")
+        if os.path.exists(icon_file):
+            window.setWindowIcon(QIcon(icon_file))
+        else:
+            icon_file_ico = os.path.join(ASSET_DIR, "WysiScan.ico")
+            if os.path.exists(icon_file_ico):
+                window.setWindowIcon(QIcon(icon_file_ico))
+
+        browser = QWebEngineView()
+        browser.settings().setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard, True)
+        
+        page = QWebEnginePage(profile, browser)
+        page.windowCloseRequested.connect(window.close)
+        page.permissionRequested.connect(lambda permission: permission.grant())
+        browser.setPage(page)
+        
+        browser.setUrl(QUrl("http://127.0.0.1:8010"))
+        window.setCentralWidget(browser)
+        
+        window.show()
+        exit_code = qt_app.exec()
+        
+        # Explicit cleanup to prevent profile deletion warnings
+        browser.setPage(None)
+        page.setParent(None)
+        del page
+        del browser
+        del profile
+        
+        sys.exit(exit_code)
 
 if __name__ == "__main__":
     run_server()

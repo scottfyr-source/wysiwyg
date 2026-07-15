@@ -90,7 +90,8 @@ select[multiple] { min-height: 60px; }
 .refresh-btn { background-color: #ffc107; color: black; }
 
 /* Custom Color Logic */
-#boxNumber, #lister, #skuFlag { background-color: #fff9c4; }
+#boxNumber, #lister { background-color: #fff9c4; }
+.sku-flag-selected { background-color: #fff9c4 !important; }
 .bg-media-red { background-color: #ffcdd2 !important; }
 .bg-sleeve-red { background-color: #F8BBD0 !important; }
 #oopLabel { background-color: #ffe0b2; border: 2px solid #ffb74d; padding: 2px 5px; border-radius: 4px; }
@@ -137,7 +138,8 @@ select[multiple] { min-height: 60px; }
 }
 [data-theme="dark"] .close-btn { color: #ccc; }
 [data-theme="dark"] .close-btn:hover { color: white; }
-[data-theme="dark"] #boxNumber, [data-theme="dark"] #lister, [data-theme="dark"] #skuFlag { background-color: #5c5c00; color: #fff; }
+[data-theme="dark"] #boxNumber, [data-theme="dark"] #lister { background-color: #5c5c00; color: #fff; }
+[data-theme="dark"] .sku-flag-selected { background-color: #5c5c00 !important; color: #fff; }
 [data-theme="dark"] .bg-media-red { background-color: #5c0000 !important; color: #fff; }
 [data-theme="dark"] .bg-sleeve-red { background-color: #c511a7 !important; color: #fff; }
 [data-theme="dark"] #oopLabel { background-color: #5c3a00; border-color: #8a5a00; }
@@ -151,6 +153,7 @@ select[multiple] { min-height: 60px; }
 [data-theme="dark"] textarea, [data-theme="dark"] #outputSku, [data-theme="dark"] #discogsUrlInput { background-color: #6d5e5e !important; color: #e0e0e0 !important; border-color: #444 !important; }
 [data-theme="dark"] #historyList > div > div { background-color: #2d2d2d !important; color: #e0e0e0 !important; border-color: #444 !important; }
 [data-theme="dark"] #scraperSection { background-color: var(--background-color) !important; border-color: #444 !important; }
+[data-theme="dark"] #customContextMenu { color: #000000 !important; }
 
 @keyframes blinker {
     50% { opacity: 0; }
@@ -245,8 +248,8 @@ select[multiple] { min-height: 60px; }
 .search-button-row { grid-column: span 3; display: flex; gap: 10px; }
 .search-button { flex: 2; background: var(--wysiwyg-blue); color: white; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
 .reset-button { flex: 1; background: var(--secondary-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
-.copy-button { background: var(--secondary-color); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; white-space: nowrap; min-width: 70px; }
-.output-button-group { display: flex; flex-direction: column; gap: 0; min-width: 70px; }
+.copy-button { background: var(--secondary-color); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; white-space: nowrap; width: 90px; }
+.output-button-group { display: flex; flex-direction: column; gap: 0; width: 90px; }
 .counter-button-group { margin-top: 10px; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-secondary); }
 .counter-button-container { display: flex; gap: 2px; }
 .counter-button { flex: 1; color: white; border: none; padding: 2px 0; border-radius: 2px; cursor: pointer; font-size: 10px; font-weight: bold; line-height: 1.2; }
@@ -267,3 +270,20 @@ select[multiple] { min-height: 60px; }
 .footer { text-align: center; margin-top: 20px; padding-top: 10px; color: var(--secondary-color); font-size: 11px; border-top: 1px solid var(--border-color); }
 .footer-link { color: inherit; text-decoration: none; }
 .footer-button { font-size: 10px; padding: 1px 6px; margin-left: 10px; cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: var(--secondary-color); border-radius: 3px; }
+
+/* Padlock Checkbox Styling */
+.lock-checkbox {
+    display: none;
+}
+.lock-icon {
+    font-size: 16px;
+    cursor: pointer;
+    user-select: none;
+    padding: 2px 4px;
+}
+.lock-icon::before {
+    content: "🔓";
+}
+.lock-checkbox:checked + .lock-icon::before {
+    content: "🔒";
+}
