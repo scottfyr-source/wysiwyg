@@ -48,35 +48,51 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         const targetUrl = isPageScrape ? (info.pageUrl || tab.url) : info.linkUrl;
         if (!targetUrl) return;
 
-        // Helper to inject the script
-        const runScript = (tabId) => {
-            chrome.scripting.executeScript({
-                target: { tabId: tabId },
-                func: triggerScrape,
-                args: [targetUrl]
-            }).catch(err => console.error("Script injection failed:", err));
-        };
-
-        // Find the tab where the WYSIWYG tool is running
-        chrome.tabs.query({ url: ["http://127.0.0.1:8008/*", "http://localhost:8008/*"] }, (tabs) => {
-            if (tabs.length > 0) {
-                const wysiwygTab = tabs[0];
-                chrome.tabs.update(wysiwygTab.id, { active: true });
-                chrome.windows.update(wysiwygTab.windowId, { focused: true });
-                runScript(wysiwygTab.id);
-            } else {
-                // If the tab isn't open, open it and then send the message
-                chrome.tabs.create({ url: "http://127.0.0.1:8008/" }, (newTab) => {
-                    // Wait for the tab to finish loading before sending the message
-                    chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
-                        if (tabId === newTab.id && changeInfo.status === 'complete') {
-                            chrome.tabs.onUpdated.removeListener(listener); // Clean up the listener
-                            // Small delay to ensure DOM is ready
-                            setTimeout(() => runScript(newTab.id), 500);
-                        }
-                    });
-                });
+        // Try local native app API first
+        fetch('http://127.0.0.1:8008/api/extension-scrape', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: targetUrl })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Local API request failed");
             }
+            console.log("URL sent to WYSIWYG native desktop window successfully.");
+        })
+        .catch(err => {
+            console.log("Could not reach native app via API, falling back to tab injection:", err);
+            
+            // Helper to inject the script
+            const runScript = (tabId) => {
+                chrome.scripting.executeScript({
+                    target: { tabId: tabId },
+                    func: triggerScrape,
+                    args: [targetUrl]
+                }).catch(err => console.error("Script injection failed:", err));
+            };
+
+            // Find the tab where the WYSIWYG tool is running
+            chrome.tabs.query({ url: ["http://127.0.0.1:8008/*", "http://localhost:8008/*"] }, (tabs) => {
+                if (tabs.length > 0) {
+                    const wysiwygTab = tabs[0];
+                    chrome.tabs.update(wysiwygTab.id, { active: true });
+                    chrome.windows.update(wysiwygTab.windowId, { focused: true });
+                    runScript(wysiwygTab.id);
+                } else {
+                    // If the tab isn't open, open it and then send the message
+                    chrome.tabs.create({ url: "http://127.0.0.1:8008/" }, (newTab) => {
+                        // Wait for the tab to finish loading before sending the message
+                        chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
+                            if (tabId === newTab.id && changeInfo.status === 'complete') {
+                                chrome.tabs.onUpdated.removeListener(listener); // Clean up the listener
+                                // Small delay to ensure DOM is ready
+                                setTimeout(() => runScript(newTab.id), 500);
+                            }
+                        });
+                    });
+                }
+            });
         });
     }
 });

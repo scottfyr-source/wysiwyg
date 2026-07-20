@@ -237,7 +237,9 @@ function setupEventListeners() {
     addClickListener('pasteToScratchpadBtn', pasteToManualInput);
 
     // --- Footer ---
-    addClickListener('openRequestModalBtn', openRequestModal);
+    if (document.getElementById('openRequestModalBtn')) {
+        addClickListener('openRequestModalBtn', openRequestModal);
+    }
 
     // --- Service Status Polling ---
     // Check status every 5 seconds to reduce system load
