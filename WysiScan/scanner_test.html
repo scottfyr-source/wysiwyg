@@ -396,6 +396,9 @@
             <label style="cursor: pointer; display: flex; align-items: center; gap: 4px; font-weight: 500; font-size: 14px;">
                 <input type="checkbox" id="autoDeleteOriginal"> Auto Delete Original
             </label>
+            <label style="cursor: pointer; display: flex; align-items: center; gap: 4px; font-weight: 500; font-size: 14px;">
+                <input type="checkbox" id="autoScanCheckbox"> Autoscan
+            </label>
             
             <span style="border-left: 1px solid var(--border-color); height: 24px; margin: 0 5px;"></span>
             
@@ -584,6 +587,12 @@
     </div>
 
     <script>
+        // Heartbeat keep-alive to notify scanner_server.py that the frontend is active
+        function sendHeartbeat() {
+            fetch('/api/heartbeat', { method: 'POST' }).catch(() => {});
+        }
+        sendHeartbeat();
+        setInterval(sendHeartbeat, 3000);
         const PLACEHOLDER_SVG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMDAgMjAwIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBzdHlsZT0iYmFja2dyb3VuZDogIzFlMWUxZTsgYm9yZGVyOiAycHggZGFzaGVkICMzYTNhM2E7IGJvcmRlci1yYWRpdXM6IDhweDsiPiAgPHBhdGggZD0iTTEzNSA2NSBoMzAgYTUgNSAwIDAgMSA1IDUgdjM1IGE1IDUgMCAwIDEgLTUgNSBoLTMwIGE1IDUgMCAwIDEgLTUgLTUgdi0zNSBhNSA1IDAgMCAxIDUgLTUgeiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNTU1IiBzdHJva2Utd2lkdGg9IjMiLz4gIDxwYXRoIGQ9Ik0xMzggOTUgbDEwIC0xMCBsOCA4IGw4IC0xMiBsOCAxNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNTU1IiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPiAgPGNpcmNsZSBjeD0iMTQ2IiBjeT0iNzciIHI9IjMiIGZpbGw9IiM1NTUiLz4gIDx0ZXh0IHg9IjE1MCIgeT0iMTM1IiBmaWxsPSIjODg4IiBmb250LWZhbWlseT0iU2Vnb2UgVUksIFJvYm90bywgSGVsdmV0aWNhLCBBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9IjYwMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U2NhbiBvciBJbXBvcnQgbm93PC90ZXh0Pjwvc3ZnPg==";
         let scanCounter = 0;
         let groupStarted = false;
@@ -849,6 +858,10 @@
                 scanCounter = 0;
                 const status = document.getElementById('status');
                 status.innerText = `Starting new group '${groupName}'.`;
+            }
+
+            if (document.getElementById('autoScanCheckbox') && document.getElementById('autoScanCheckbox').checked) {
+                performScan();
             }
         }
 
@@ -1778,8 +1791,12 @@
         }
 
         function exitApp() {
-            fetch('/exit', { method: 'POST' });
-            document.body.innerHTML = "<h1>Server shutting down... You can close this tab.</h1>";
+            document.body.innerHTML = "<h1>Server shutting down... Closing window.</h1>";
+            fetch('/exit', { method: 'POST' })
+                .then(() => { window.close(); })
+                .catch(() => { window.close(); })
+                .finally(() => { window.close(); });
+            setTimeout(() => { window.close(); }, 200);
         }
 
         async function undoLastAction() {
@@ -2057,11 +2074,18 @@
         // --- Auto-Close Logic ---
         const originalFetch = window.fetch;
         window.fetch = async (...args) => {
-            const response = await originalFetch(...args);
-            if (args[0] === '/exit' && response.ok) {
-                window.close();
+            try {
+                const response = await originalFetch(...args);
+                if (args[0] === '/exit') {
+                    window.close();
+                }
+                return response;
+            } catch (e) {
+                if (args[0] === '/exit') {
+                    window.close();
+                }
+                throw e;
             }
-            return response;
         };
 
         function closeOcrModal() {

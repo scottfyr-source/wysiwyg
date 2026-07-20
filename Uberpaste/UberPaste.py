@@ -55,7 +55,7 @@ class HorizontalScrollListWidget(QListWidget):
             super().wheelEvent(event)
 
     def dropEvent(self, event):
-        target_item = self.itemAt(event.pos())
+        target_item = self.itemAt(event.position().toPoint())
         drop_pos = self.dropIndicatorPosition()
         
         if drop_pos == QAbstractItemView.OnItem and target_item:
@@ -509,6 +509,18 @@ class ClipTrayApp(QWidget):
         elif event.type() == QEvent.KeyRelease:
             if event.key() == Qt.Key_Control:
                 self.on_ctrl_state_changed(False)
+        elif event.type() == QEvent.MouseButtonPress:
+            if event.button() == Qt.LeftButton:
+                from PySide6.QtWidgets import QWidget
+                if obj == self.list_widget or (isinstance(obj, QWidget) and self.list_widget.isAncestorOf(obj)):
+                    if not self.sort_mode and not self.temp_sort_mode:
+                        self.temp_sort_mode = True
+                        self.set_drag_drop_state(True)
+        elif event.type() == QEvent.MouseButtonRelease:
+            if event.button() == Qt.LeftButton:
+                if self.temp_sort_mode:
+                    self.temp_sort_mode = False
+                    self.set_drag_drop_state(self.sort_mode)
         elif event.type() == QEvent.WindowDeactivate:
             self.on_ctrl_state_changed(False)
         return super().eventFilter(obj, event)
@@ -553,10 +565,20 @@ class ClipTrayApp(QWidget):
         """Applies the current theme (Dark/Light) to the main window and controls."""
         if self.dark_mode:
             self.setStyleSheet("QWidget { background-color: #121212; color: #ffffff; }")
-            self.list_widget.setStyleSheet("QListWidget { background-color: #1e1e1e; border: none; } QListWidget::item { border-bottom: 1px solid #444; }")
+            self.list_widget.setStyleSheet("""
+                QListWidget { background-color: #1e1e1e; border: none; } 
+                QListWidget::item { border-bottom: 1px solid #444; }
+                QListWidget::item:selected { background-color: #00FFFF; }
+                QListWidget::item:selected * { background-color: #00FFFF; color: #000000; }
+            """)
         else:
             self.setStyleSheet("QWidget { background-color: #f0f0f0; color: #000000; }")
-            self.list_widget.setStyleSheet("QListWidget { background-color: #ffffff; border: none; } QListWidget::item { border-bottom: 1px solid #ccc; }")
+            self.list_widget.setStyleSheet("""
+                QListWidget { background-color: #ffffff; border: none; } 
+                QListWidget::item { border-bottom: 1px solid #ccc; }
+                QListWidget::item:selected { background-color: #00FFFF; }
+                QListWidget::item:selected * { background-color: #00FFFF; color: #000000; }
+            """)
 
         # Options button style (Yellow background, Black text)
         self.options_btn.setStyleSheet("""
@@ -1046,7 +1068,7 @@ class ClipTrayApp(QWidget):
         self.update_list_widget()
 
     def rebuild_history_from_view(self):
-        if not self.sort_mode:
+        if not self.sort_mode and not self.temp_sort_mode:
             return
 
         # Get the new visual order of items from the QListWidget

@@ -33,6 +33,8 @@ chrome.runtime.onInstalled.addListener(() => {
         contexts: ["page"],
         documentUrlPatterns: [
             "*://*.discogs.com/release/*",
+            "*://*.discogs.com/sell/item/*",
+            "*://*.discogs.com/shop/item/*",
             "*://*.discogs.com/master/*"
         ]
     });

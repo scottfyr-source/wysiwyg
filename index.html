@@ -71,11 +71,13 @@
         <div class="modal-content modal-content-narrow">
             <span id="closeCalcModalBtn" class="close-btn">&times;</span>
             <h3 style="margin-top: 0; color: var(--wysiwyg-blue);">Cost Calculator</h3>
-
-            <label class="form-label">Condition:</label>
-            <select id="calcCondition" class="full-width-input" style="margin-bottom: 10px;"></select>
+            <div style="display:none;">
+                <label class="form-label">Condition:</label>
+                <select id="calcCondition" class="full-width-input" style="margin-bottom: 10px;"></select>
+            </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+
                 <div>
                     <label class="form-label">Comp. $:</label>
                     <input type="text" id="calcCompPrice" class="full-width-input">
@@ -103,10 +105,9 @@
                     <input type="text" id="calcOurTotal" class="full-width-input" readonly
                         style="background: #e9ecef; color: black; cursor: text;">
                 </div>
-            </div>
-
-            <div class="modal-actions" style="margin-top: 15px;">
-                <button id="calculateBtn" class="btn-search" style="width: 100%;">Calculate</button>
+                <div class="modal-actions" style="margin-top: 15px; grid-column: span 2;">
+                    <button id="calculateBtn" class="btn-search" style="width: 100%;">Calculate</button>
+                </div>
             </div>
         </div>
     </div>
@@ -153,39 +154,48 @@
     <div class="container">
         <div class="sticky-header">
             <div class="nav-item-group"
-                style="justify-content: space-between; padding: 5px 10px; margin-bottom: 5px; align-items: flex-start;">
-                <div class="nav-item-group" style="align-items: flex-start;">
+                style="justify-content: space-between; padding: 5px 10px; margin-bottom: 5px; align-items: center;">
+                <div class="nav-item-group" style="align-items: flex-start; gap: 5px;">
                     <button id="runUberPasteBtn" class="nav-btn nav-item-group" title="Launch UberPaste"
-                        style="height: fit-content;"><img src="/UberPaste/UberPaste.png" class="nav-icon">
+                        style="width: 120px; height: 40px; justify-content: center;"><img src="/UberPaste/UberPaste.png"
+                            class="nav-icon">
                         UberPaste</button>
                     <div style="display: flex; flex-direction: column; align-items: center;">
-                        <button id="runWysiScanBtn" class="nav-btn nav-item-group" title="Open WysiScan"><img
-                                src="/WysiScan/WysiScan.png" class="nav-icon"> WysiScan</button>
-                        <label style="font-size: 10px; cursor: pointer; color: var(--text-color); margin-top: 2px;"
-                            title="Docking opens the tool in a new browser tab instead of a floating popup window.">
-                            <input type="checkbox" id="dockScanner"> Dock
-                        </label>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <button id="runWysiScanBtn" class="nav-btn nav-item-group" title="Open WysiScan"
+                                style="width: 120px; height: 40px; justify-content: center;"><img
+                                    src="/WysiScan/WysiScan.png" class="nav-icon"> WysiScan</button>
+                            <label style="display: none;"
+                                title="Docking opens the tool in a new browser tab instead of a floating popup window;">
+                                <input type="checkbox" id="dockScanner" checked> Dock
+                            </label>
+                        </div>
                     </div>
                     <button id="openCalcBtn" class="nav-btn" title="Cost Calculator"
-                        style="padding: 0 8px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-left: 5px;">💲
+                        style="width: 120px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 14px;">💲
                         Calc</button>
                 </div>
-                <div class="nav-item-group">
-                    <button id="themeBtn" class="nav-btn" title="Toggle Dark/Light Mode">🌓</button>
-                    <button id="refreshBtn" class="nav-btn refresh-btn"
-                        title="Force refresh to get the latest version">🔄 Refresh</button>
-                    <button id="updateMenusBtn" class="nav-btn" title="Pull latest menus from server">⬇️ Update
+                <div class="logo-container">
+                    <img src="/wysiwyglogo.png" alt="WYSIWYG Logo" class="logo">
+                </div>
+                <div class="nav-item-group" style="justify-content: flex-end; gap: 5px;">
+                    <button id="themeBtn" class="nav-btn nav-item-group" title="Toggle Dark/Light Mode"
+                        style="width: 40px; height: 40px; justify-content: center;">🌓</button>
+                    <button id="refreshBtn" class="nav-btn nav-item-group refresh-btn"
+                        title="Force refresh to get the latest version"
+                        style="width: 120px; height: 40px; justify-content: center;">🔄 Refresh</button>
+                    <button id="updateMenusBtn" class="nav-btn nav-item-group" title="Pull latest menus from server"
+                        style="width: 120px; height: 40px; justify-content: center;">Update
                         Menus</button>
-                    <button id="editorBtn" class="nav-btn" title="Open Settings Editor">⚙️ Editor</button>
-                    <button id="shutdownBtn" class="nav-btn shutdown-btn" title="Shut Down Server">🔌 Shut Down</button>
+                    <button id="editorBtn" class="nav-btn nav-item-group" title="Open Settings Editor"
+                        style="width: 120px; height: 40px; justify-content: center;">⚙️ Editor</button>
+                    <button id="shutdownBtn" class="nav-btn nav-item-group shutdown-btn" title="Shut Down Server"
+                        style="width: 120px; height: 40px; justify-content: center;">Shut Down</button>
                 </div>
             </div>
 
             <div id="updateBanner" class="blink-update" style="display:none;">
                 ⚠️ NEW VERSION AVAILABLE! CLICK HERE TO UPDATE ⚠️
-            </div>
-            <div class="logo-container">
-                <img src="/wysiwyglogo.png" alt="WYSIWYG Logo" class="logo">
             </div>
 
             <h2 id="appTitle" style="cursor: pointer;" title="Click to view Changelog">WYSIWYG</h2>
@@ -206,9 +216,14 @@
                     class="scraper-form">
                     <div class="scraper-form-container">
                         <label>Paste Discogs URL:</label>
-                        <label class="nav-item-group" style="font-weight:normal; font-size:11px; cursor:pointer;">
-                            <input type="checkbox" id="autoPasteToggle" checked> Autopaste
-                        </label>
+                        <div class="nav-item-group" style="gap: 10px;">
+                            <label class="nav-item-group" style="font-weight:normal; font-size:11px; cursor:pointer;">
+                                <input type="checkbox" id="autoPasteToggle" checked> Autopaste
+                            </label>
+                            <label class="nav-item-group" style="font-weight:normal; font-size:11px; cursor:pointer;">
+                                <input type="checkbox" id="autoGenerateToggle"> Auto Generate
+                            </label>
+                        </div>
                     </div>
                     <div class="scraper-input-group">
                         <input type="url" name="url" id="discogsUrlInput" style="width:100%;"
@@ -376,6 +391,10 @@
                 <label>Generated Listing Data</label>
                 <div class="nav-item-group" style="margin-bottom: 5px;">
                     <button id="copySkuBtn" class="copy-button">Copy SKU</button>
+                    <label
+                        style="display: flex; align-items: center; gap: 3px; font-size: 11px; cursor: pointer; white-space: nowrap;">
+                        <input type="checkbox" id="lockSku">Lock
+                    </label>
                     <input type="text" id="outputSku" style="font-weight: bold;">
                 </div>
                 <div class="nav-item-group" style="align-items: flex-start;">
@@ -397,6 +416,10 @@
                                 title="Open Listings File/Folder">📂 Open</button>
                         </div>
                     </div>
+                    <label
+                        style="display: flex; align-items: center; gap: 3px; margin-top: 5px; font-size: 11px; cursor: pointer; white-space: nowrap;">
+                        <input type="checkbox" id="lockDesc">Lock
+                    </label>
                     <textarea id="outputDesc" rows="6"></textarea>
                 </div>
             </div>

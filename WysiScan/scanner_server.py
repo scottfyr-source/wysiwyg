@@ -2190,6 +2190,14 @@ async def redo_action(data: dict = Body(...)):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+LAST_HEARTBEAT = time.time()
+
+@app.post("/api/heartbeat")
+async def heartbeat():
+    global LAST_HEARTBEAT
+    LAST_HEARTBEAT = time.time()
+    return {"status": "ok"}
+
 @app.post("/exit")
 async def exit_app():
     """Endpoint to gracefully shut down the server."""
@@ -2215,6 +2223,20 @@ def run_server():
         pass # Fallback if force=True isn't supported or fails
 
     logging.info("--- WysiScan Server Starting ---")
+
+    # Start heartbeat monitor thread to auto-shutdown when browser tab is closed
+    def monitor_heartbeat():
+        global LAST_HEARTBEAT
+        # Allow 15 seconds for browser to load and send initial heartbeat
+        time.sleep(15)
+        while True:
+            time.sleep(2)
+            if time.time() - LAST_HEARTBEAT > 60:
+                logging.info("No heartbeat received for 60 seconds. Shutting down WysiScan server...")
+                os.kill(os.getpid(), signal.SIGTERM)
+                break
+
+    threading.Thread(target=monitor_heartbeat, daemon=True).start()
 
     # Only open browser automatically if run as a standalone script
     if '--launched-by-main' not in sys.argv:

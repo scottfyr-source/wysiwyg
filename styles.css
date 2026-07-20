@@ -90,7 +90,8 @@ select[multiple] { min-height: 60px; }
 .refresh-btn { background-color: #ffc107; color: black; }
 
 /* Custom Color Logic */
-#boxNumber, #lister, #skuFlag { background-color: #fff9c4; }
+#boxNumber, #lister { background-color: #fff9c4; }
+.sku-flag-selected { background-color: #fff9c4 !important; }
 .bg-media-red { background-color: #ffcdd2 !important; }
 .bg-sleeve-red { background-color: #F8BBD0 !important; }
 #oopLabel { background-color: #ffe0b2; border: 2px solid #ffb74d; padding: 2px 5px; border-radius: 4px; }
@@ -137,7 +138,8 @@ select[multiple] { min-height: 60px; }
 }
 [data-theme="dark"] .close-btn { color: #ccc; }
 [data-theme="dark"] .close-btn:hover { color: white; }
-[data-theme="dark"] #boxNumber, [data-theme="dark"] #lister, [data-theme="dark"] #skuFlag { background-color: #5c5c00; color: #fff; }
+[data-theme="dark"] #boxNumber, [data-theme="dark"] #lister { background-color: #5c5c00; color: #fff; }
+[data-theme="dark"] .sku-flag-selected { background-color: #5c5c00 !important; color: #fff; }
 [data-theme="dark"] .bg-media-red { background-color: #5c0000 !important; color: #fff; }
 [data-theme="dark"] .bg-sleeve-red { background-color: #c511a7 !important; color: #fff; }
 [data-theme="dark"] #oopLabel { background-color: #5c3a00; border-color: #8a5a00; }
@@ -151,6 +153,7 @@ select[multiple] { min-height: 60px; }
 [data-theme="dark"] textarea, [data-theme="dark"] #outputSku, [data-theme="dark"] #discogsUrlInput { background-color: #6d5e5e !important; color: #e0e0e0 !important; border-color: #444 !important; }
 [data-theme="dark"] #historyList > div > div { background-color: #2d2d2d !important; color: #e0e0e0 !important; border-color: #444 !important; }
 [data-theme="dark"] #scraperSection { background-color: var(--background-color) !important; border-color: #444 !important; }
+[data-theme="dark"] #customContextMenu { color: #000000 !important; }
 
 @keyframes blinker {
     50% { opacity: 0; }

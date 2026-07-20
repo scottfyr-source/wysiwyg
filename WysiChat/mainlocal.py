@@ -899,9 +899,9 @@ def main():
     create_alert_icon(alert_icon)
     
     win_loc = sg.user_settings_get_entry('-WIN-LOC-', None)
-Oh I j    win_size = sg.user_settings_get_entry('-WIN-SIZE-', None)
+    win_size = sg.user_settings_get_entry('-WIN-SIZE-', None)
 
-    window = sg.Window("WysiChat", layout, finalize=True, icon=window_icon, resizable=True, use_custom_titlebar=use_custom_title, enable_close_attempted_event=True, location=win_loc, size=win_size)
+    window = sg.Window("WysiChat", layout, finalize=True, icon=window_icon, resizable=True, use_custom_titlebar=use_custom_title, enable_close_attempted_event=True, location=win_loc if win_loc else (None, None), size=win_size if win_size else (None, None))
     window.TKroot.bind('<Enter>', lambda e: window.bring_to_front())
     window['-IN-'].bind('<Button-1>', 'ResetUnread')
     window['-CHAT-'].bind('<Button-1>', 'ResetUnread')

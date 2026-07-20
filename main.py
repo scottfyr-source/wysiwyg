@@ -1635,6 +1635,14 @@ async def scrape_discogs(url: str = Form(...)):
 
                     // Also refresh the history list automatically
                     if (window.htmx) htmx.trigger('#historyList', 'load');
+
+                    // Automatically generate listing data if Auto Generate is checked
+                    const autoGen = document.getElementById('autoGenerateToggle');
+                    if (autoGen && autoGen.checked && typeof generateListingData === 'function') {{
+                        setTimeout(() => {{
+                            generateListingData();
+                        }}, 50);
+                    }}
                 }})();
             </script>
             """
@@ -1771,6 +1779,7 @@ async def get_service_status():
     """Checks if external tools are currently running."""
     uberpaste = False
     wysiscan = False
+    wysichat = False
     
     # Check WysiScan by port 8010 (Standardized)
     target_port = 8010
@@ -1786,14 +1795,19 @@ async def get_service_status():
                 # Check for UberPaste (Script or Frozen)
                 if "UberPaste.py" in cmd or "--uberpaste" in cmd:
                     uberpaste = True
-                    # We found UberPaste, and we already checked WysiScan above
-                    break
+                
+                # Check for WysiChat (Script or Frozen)
+                if 'WysiChat.exe' in p.info['name'] or 'WysiChat' in cmd or '--wysichat' in cmd:
+                    wysichat = True
+
+                if uberpaste and wysichat: # Early exit if all found
+                    break 
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass
     except Exception:
         pass
             
-    return {"wysiscan": wysiscan, "uberpaste": uberpaste}
+    return {"wysiscan": wysiscan, "uberpaste": uberpaste, "wysichat": wysichat}
 
 # --- LOGGING CONFIGURATION ---
 logging.basicConfig(
@@ -1861,6 +1875,22 @@ if __name__ == "__main__":
                 with open("wysiwyg_debug.log", "a", encoding="utf-8") as f_log:
                     f_log.write(f"\nCRITICAL - Image Converter subprocess crash: {e}\n{traceback.format_exc()}\n")
                 sys.exit(1)
+
+    # Prevent multiple instances of the main application
+    if sys.platform == "win32":
+        import ctypes
+        from ctypes import wintypes
+        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+        kernel32.CreateMutexW.argtypes = [ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR]
+        kernel32.CreateMutexW.restype = wintypes.HANDLE
+        
+        global _instance_mutex
+        # Use Local namespace (no "Global\" prefix) to avoid ERROR_ACCESS_DENIED when run as non-admin
+        _instance_mutex = kernel32.CreateMutexW(None, False, "Local\\WYSIWYG_SINGLE_INSTANCE_MUTEX")
+        last_error = ctypes.get_last_error()
+        if last_error in (5, 183):  # ERROR_ACCESS_DENIED (5) or ERROR_ALREADY_EXISTS (183)
+            logging.info(f"Another instance is already running (error {last_error}). Exiting.")
+            sys.exit(0)
 
     logging.info("--- APPLICATION STARTING ---")
 
